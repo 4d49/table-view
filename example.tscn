@@ -1,0 +1,112 @@
+[gd_scene load_steps=4 format=3 uid="uid://xqn36jjxpthr"]
+
+[ext_resource type="Theme" uid="uid://de8hd50qv2mti" path="res://addons/table-view/resources/table_view.tres" id="1_dxj5b"]
+[ext_resource type="Script" path="res://addons/table-view/scripts/table_view.gd" id="2_1kret"]
+
+[sub_resource type="GDScript" id="script"]
+script/source = "# Copyright (c) 2024 Mansur Isaev and contributors - MIT License
+# See `LICENSE.md` included in the source distribution for details.
+
+extends PanelContainer
+
+
+@onready var table_view: TableView = $TableView
+@export_range(0, 10_000) var data_size: int = 10_000
+
+
+func _ready() -> void:
+	# The `add_column` method returns the index of the new column.
+	# The first argument is the column title, the second its type.
+	var uid := table_view.add_column(\"UID\", TableView.Type.STRING_NAME)
+	var name := table_view.add_column(\"Name\", TableView.Type.STRING)
+	var unique := table_view.add_column(\"Unique\", TableView.Type.BOOL)
+	# The third argument is the type of hint.
+	var description := table_view.add_column(\"Description\", TableView.Type.STRING, TableView.Hint.MULTILINE_TEXT)
+	# The fourth argument is a type hint string.
+	var cost := table_view.add_column(\"Cost\", TableView.Type.INT, TableView.Hint.RANGE, \"0,9999\")
+	var weight := table_view.add_column(\"Weight\", TableView.Type.FLOAT, TableView.Hint.RANGE, \"0.0,99.99,0.1\")
+
+	# Some method returning an array with dictionaries.
+	for data: Dictionary in get_some_data():
+		var row_idx := table_view.add_row()
+		# Previously declared variables are used as the column index.
+		table_view.set_cell_value(row_idx, uid, data.uid)
+		table_view.set_cell_value(row_idx, name, data.name)
+		table_view.set_cell_value(row_idx, description, data.description)
+		table_view.set_cell_value(row_idx, unique, data.unique)
+		table_view.set_cell_value(row_idx, cost, data.cost)
+		table_view.set_cell_value(row_idx, weight, data.weight)
+
+
+func create_item(index: int) -> Dictionary[StringName, Variant]:
+	return {
+		&\"uid\": StringName(\"%05X\" % index),
+		&\"name\": \"Item Name %d\" % index,
+		&\"description\": \"Item Description %d\" % index,
+		&\"unique\": bool(index % 2),
+		&\"cost\": randi_range(0, 9999),
+		&\"weight\": randf_range(0.0, 99.99),
+	}
+
+func get_some_data() -> Array[Dictionary]:
+	var data: Array[Dictionary] = []
+	data.resize(data_size)
+
+	for i: int in data_size:
+		data[i] = create_item(i)
+
+	return data
+
+
+func _on_column_clicked(column_idx: int) -> void:
+	print(\"Column clicked: %d\" % column_idx)
+
+func _on_column_double_clicked(column_idx: int) -> void:
+	print(\"Column double clicked: %d\" % column_idx)
+
+func _on_column_rmb_clicked(column_idx: int) -> void:
+	print(\"Column RMB clicked: %d\" % column_idx)
+
+
+func _on_row_clicked(row_idx: int) -> void:
+	print(\"Row clicked: %d\" % row_idx)
+
+func _on_row_double_clicked(row_idx: int) -> void:
+	print(\"Row double clicked: %d\" % row_idx)
+
+func _on_row_rmb_clicked(row_idx: int) -> void:
+	print(\"Row RMB clicked: %d\" % row_idx)
+
+
+func _on_cell_clicked(row_idx: int, column_idx: int) -> void:
+	print(\"Cell clicked: Row %d; Column %d\" % [row_idx, column_idx])
+
+func _on_cell_double_clicked(row_idx: int, column_idx: int) -> void:
+	print(\"Cell double clicked: Row %d; Column %d\" % [row_idx, column_idx])
+
+func _on_cell_rmb_clicked(row_idx: int, column_idx: int) -> void:
+	print(\"Cell RMB clicked: Row %d; Column %d\" % [row_idx, column_idx])
+"
+
+[node name="Example" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("script")
+
+[node name="TableView" type="Control" parent="."]
+layout_mode = 2
+theme = ExtResource("1_dxj5b")
+script = ExtResource("2_1kret")
+
+[connection signal="cell_clicked" from="TableView" to="." method="_on_cell_clicked"]
+[connection signal="cell_double_clicked" from="TableView" to="." method="_on_cell_double_clicked"]
+[connection signal="cell_rmb_clicked" from="TableView" to="." method="_on_cell_rmb_clicked"]
+[connection signal="column_clicked" from="TableView" to="." method="_on_column_clicked"]
+[connection signal="column_double_clicked" from="TableView" to="." method="_on_column_double_clicked"]
+[connection signal="column_rmb_clicked" from="TableView" to="." method="_on_column_rmb_clicked"]
+[connection signal="row_clicked" from="TableView" to="." method="_on_row_clicked"]
+[connection signal="row_double_clicked" from="TableView" to="." method="_on_row_double_clicked"]
+[connection signal="row_rmb_clicked" from="TableView" to="." method="_on_row_rmb_clicked"]

@@ -1,0 +1,80 @@
+[gd_resource type="Theme" load_steps=10 format=3 uid="uid://de8hd50qv2mti"]
+
+[ext_resource type="FontFile" uid="uid://b7f6kvtay8epi" path="res://fonts/InterDisplay-Regular.woff2" id="1_12j1h"]
+
+[sub_resource type="StyleBoxFlat" id="column_hover"]
+bg_color = Color(0.184314, 0.192157, 0.215686, 1)
+corner_detail = 1
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="column_normal"]
+bg_color = Color(0.0823529, 0.0941176, 0.117647, 1)
+corner_detail = 1
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="column_pressed"]
+bg_color = Color(0.0392157, 0.0470588, 0.0588235, 1)
+corner_detail = 1
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="focus"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+draw_center = false
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.439216, 0.729412, 0.980392, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 3
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="panel"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.13125, 0.15, 0.18125, 1)
+border_color = Color(0.084, 0.096, 0.116, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 3
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="row_alternate"]
+bg_color = Color(0.211765, 0.239216, 0.290196, 0.501961)
+corner_detail = 1
+anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="row_normal"]
+
+[sub_resource type="StyleBoxFlat" id="row_selected"]
+bg_color = Color(0.439216, 0.729412, 0.980392, 0.27451)
+corner_detail = 1
+anti_aliasing = false
+
+[resource]
+TableView/base_type = &"Control"
+TableView/colors/font_color = Color(0.803922, 0.811765, 0.823529, 1)
+TableView/constants/inner_margin_bottom = 4
+TableView/constants/inner_margin_left = 4
+TableView/constants/inner_margin_right = 4
+TableView/constants/inner_margin_top = 4
+TableView/font_sizes/font_size = 14
+TableView/fonts/font = ExtResource("1_12j1h")
+TableView/styles/column_hover = SubResource("column_hover")
+TableView/styles/column_normal = SubResource("column_normal")
+TableView/styles/column_pressed = SubResource("column_pressed")
+TableView/styles/focus = SubResource("focus")
+TableView/styles/panel = SubResource("panel")
+TableView/styles/row_alternate = SubResource("row_alternate")
+TableView/styles/row_normal = SubResource("row_normal")
+TableView/styles/row_selected = SubResource("row_selected")

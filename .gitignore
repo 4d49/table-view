@@ -1,0 +1,8 @@
+# Godot auto generated files
+*.import
+
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/example.tscn export-ignore
+/LICENSE.md export-ignore
+/README.md export-ignore
