@@ -28,6 +28,7 @@ enum Type {
 	INT = TYPE_INT,
 	FLOAT = TYPE_FLOAT,
 	STRING = TYPE_STRING,
+	COLOR = TYPE_COLOR,
 	STRING_NAME = TYPE_STRING_NAME,
 	MAX,
 }
@@ -36,6 +37,7 @@ enum Hint {
 	RANGE = PROPERTY_HINT_RANGE,
 	ENUM = PROPERTY_HINT_ENUM,
 	MULTILINE_TEXT = PROPERTY_HINT_MULTILINE_TEXT,
+	COLOR_NO_ALPHA = PROPERTY_HINT_COLOR_NO_ALPHA,
 }
 enum DrawMode {
 	NORMAL,
@@ -167,11 +169,14 @@ func _notification(what: int) -> void:
 					rect = inner_margin_rect(rect)
 					draw_rect(rect, Color(cell.color, 0.25))
 
-					if cell.type_hint.type == Type.BOOL:
-						var texture: Texture2D = _checked if cell.value else _unchecked
-						texture.draw(get_canvas_item(), get_text_position(rect, texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
-					else:
-						draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
+					match cell.type_hint.type:
+						Type.BOOL:
+							var texture: Texture2D = _checked if cell.value else _unchecked
+							texture.draw(get_canvas_item(), get_text_position(rect, texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+						Type.COLOR:
+							draw_rect(inner_margin_rect(rect), cell.value)
+						_:
+							draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
 
 			for column: Dictionary in _columns:
 				if not column.visible:
@@ -228,11 +233,14 @@ func _notification(what: int) -> void:
 					if not drawable_rect.intersects(rect):
 						continue
 
-					if cell.type_hint.type == Type.BOOL:
-						var texture: Texture2D = _checked if cell.value else _unchecked
-						texture.draw(_canvas, get_text_position(inner_margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
-					else:
-						draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
+					match cell.type_hint.type:
+						Type.BOOL:
+							var texture: Texture2D = _checked if cell.value else _unchecked
+							texture.draw(_canvas, get_text_position(inner_margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+						Type.COLOR:
+							RenderingServer.canvas_item_add_rect(_canvas, inner_margin_rect(rect), cell.value)
+						_:
+							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
 
 			for column: Dictionary in _columns:
 				if not column.visible:
