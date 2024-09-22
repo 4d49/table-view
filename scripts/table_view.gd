@@ -20,6 +20,8 @@ signal cell_double_clicked(row_idx: int, column_idx: int)
 signal row_selected(row_idx: int)
 
 
+const NUMBERS_AFTER_DOT = 3
+
 const DEBUG_ENABLED: bool = false
 
 
@@ -546,13 +548,26 @@ func update_table(force: bool = false) -> void:
 	queue_redraw()
 
 
-
+static func color_to_string_no_alpha(color: Color) -> String:
+	return (
+		  "R: " + str(color.r).pad_decimals(NUMBERS_AFTER_DOT) +
+		"\nG: " + str(color.g).pad_decimals(NUMBERS_AFTER_DOT) +
+		"\nB: " + str(color.b).pad_decimals(NUMBERS_AFTER_DOT)
+	)
+static func color_to_string(color: Color) -> String:
+	return (
+			  "R: " + str(color.r).pad_decimals(NUMBERS_AFTER_DOT) +
+			"\nG: " + str(color.g).pad_decimals(NUMBERS_AFTER_DOT) +
+			"\nB: " + str(color.b).pad_decimals(NUMBERS_AFTER_DOT) +
+			"\nA: " + str(color.a).pad_decimals(NUMBERS_AFTER_DOT)
+		)
 
 static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> Callable:
-	const NUMBERS_AFTER_DOT = 3
-
-	if type == Type.FLOAT:
-		return hint_string.num.bind(NUMBERS_AFTER_DOT)
+	match type:
+		Type.FLOAT:
+			return hint_string.num.bind(NUMBERS_AFTER_DOT)
+		Type.COLOR:
+			return color_to_string_no_alpha if hint == Hint.COLOR_NO_ALPHA else color_to_string
 
 	return str
 
