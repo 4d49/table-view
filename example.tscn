@@ -26,6 +26,8 @@ func _ready() -> void:
 	var cost := table_view.add_column(\"Cost\", TableView.Type.INT, TableView.Hint.RANGE, \"0,9999\")
 	var weight := table_view.add_column(\"Weight\", TableView.Type.FLOAT, TableView.Hint.RANGE, \"0.0,99.99,0.1\")
 
+	var color := table_view.add_column(\"Color\", TableView.Type.COLOR, TableView.Hint.COLOR_NO_ALPHA)
+
 	# Some method returning an array with dictionaries.
 	for data: Dictionary in get_some_data():
 		var row_idx := table_view.add_row()
@@ -36,6 +38,7 @@ func _ready() -> void:
 		table_view.set_cell_value(row_idx, unique, data.unique)
 		table_view.set_cell_value(row_idx, cost, data.cost)
 		table_view.set_cell_value(row_idx, weight, data.weight)
+		table_view.set_cell_value(row_idx, color, data.color)
 
 
 func create_item(index: int) -> Dictionary[StringName, Variant]:
@@ -46,6 +49,7 @@ func create_item(index: int) -> Dictionary[StringName, Variant]:
 		&\"unique\": bool(index % 2),
 		&\"cost\": randi_range(0, 9999),
 		&\"weight\": randf_range(0.0, 99.99),
+		&\"color\": Color(randf(), randf(), randf()),
 	}
 
 func get_some_data() -> Array[Dictionary]:
