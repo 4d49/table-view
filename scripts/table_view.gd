@@ -361,7 +361,7 @@ func _get_tooltip(at_position: Vector2) -> String:
 		if row_idx != INVALID_ROW:
 			var cell_idx := find_cell_at_position(row_idx, at_position)
 			if cell_idx != INVALID_CELL:
-				return str(get_cell_value(row_idx, cell_idx))
+				return stringify_cell(row_idx, cell_idx)
 
 	return get_tooltip_text()
 
@@ -489,9 +489,11 @@ func update_table(force: bool = false) -> void:
 					var cell: Dictionary = row.cells[i]
 					var cell_width: int = _columns[i].rect.size.x
 
+					var stringifier: Callable = cell.type_hint.stringifier
+
 					var text_line: TextLine = cell.text_line
 					text_line.clear()
-					text_line.add_string(str(cell.value), _font, _font_size)
+					text_line.add_string(stringifier.call(cell.value), _font, _font_size)
 					text_line.set_width(cell_width)
 
 					cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
@@ -521,20 +523,33 @@ func update_table(force: bool = false) -> void:
 	queue_redraw()
 
 
+
+
+static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> Callable:
+	const NUMBERS_AFTER_DOT = 3
+
+	if type == Type.FLOAT:
+		return hint_string.num.bind(NUMBERS_AFTER_DOT)
+
+	return str
+
+
 static func type_hint_create(
 		type: Type,
 		hint: Hint,
 		hint_string: String,
+		stringifier: Callable,
 	) -> Dictionary[StringName, Variant]:
 
-	return {&"type": type, &"hint": hint, &"hint_string": hint_string}
+	return {&"type": type, &"hint": hint, &"hint_string": hint_string, &"stringifier": stringifier}
 
 
 func add_column(
 		title: String,
 		type: Type,
 		hint: Hint = Hint.NONE,
-		hint_string: String = ""
+		hint_string: String = "",
+		stringifier: Callable = stringifier_default(type, hint, hint_string),
 	) -> int:
 
 	var text_line := TextLine.new()
@@ -547,7 +562,7 @@ func add_column(
 		&"dirty": true,
 		&"visible": true,
 		&"text_line": text_line,
-		&"type_hint": type_hint_create(type, hint, hint_string),
+		&"type_hint": type_hint_create(type, hint, hint_string, stringifier),
 		&"draw_mode": DrawMode.NORMAL,
 	}
 
@@ -736,9 +751,10 @@ func set_cell_custom_type(
 		type: Type,
 		hint: Hint = Hint.NONE,
 		hint_string: String = "",
+		stringifier: Callable = stringifier_default(type, hint, hint_string),
 	) -> void:
 
-	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(type, hint, hint_string)
+	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(type, hint, hint_string, stringifier)
 
 func get_cell_type(row_idx: int, column_idx: int) -> Type:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"type"]
@@ -750,6 +766,14 @@ func get_cell_hint_string(row_idx: int, column_idx: int) -> String:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"hint_string"]
 
 
+func stringify_cell(row_idx: int, column_idx: int) -> String:
+	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
+
+	var stringifier: Callable = cell.type_hint.stringifier
+	if stringifier.is_valid():
+		return stringifier.call(cell.value)
+
+	return str(cell.value)
 
 
 
