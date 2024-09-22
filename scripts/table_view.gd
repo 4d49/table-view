@@ -521,6 +521,13 @@ func update_table(force: bool = false) -> void:
 	queue_redraw()
 
 
+static func type_hint_create(
+		type: Type,
+		hint: Hint,
+		hint_string: String,
+	) -> Dictionary[StringName, Variant]:
+
+	return {&"type": type, &"hint": hint, &"hint_string": hint_string}
 
 
 func add_column(
@@ -534,19 +541,13 @@ func add_column(
 	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
 	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
 
-	var type_hint: Dictionary[StringName, Variant] = {
-		&"type": type,
-		&"hint": hint,
-		&"hint_string": hint_string,
-	}
-
 	var column: Dictionary[StringName, Variant] = {
 		&"title": title,
 		&"rect": Rect2i(),
 		&"dirty": true,
 		&"visible": true,
 		&"text_line": text_line,
-		&"type_hint": type_hint,
+		&"type_hint": type_hint_create(type, hint, hint_string),
 		&"draw_mode": DrawMode.NORMAL,
 	}
 
@@ -737,12 +738,7 @@ func set_cell_custom_type(
 		hint_string: String = "",
 	) -> void:
 
-	var type_hint: Dictionary[StringName, Variant] = {
-		&"type": type,
-		&"hint": hint,
-		&"hint_string": hint_string,
-	}
-	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint
+	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(type, hint, hint_string)
 
 func get_cell_type(row_idx: int, column_idx: int) -> Type:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"type"]
