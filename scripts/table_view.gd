@@ -526,8 +526,10 @@ func update_table(force: bool = false) -> void:
 
 
 static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> Callable:
+	const NUMBERS_AFTER_DOT = 3
+
 	if type == Type.FLOAT:
-		return hint_string.num.bind(3)
+		return hint_string.num.bind(NUMBERS_AFTER_DOT)
 
 	return str
 
