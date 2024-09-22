@@ -361,7 +361,7 @@ func _get_tooltip(at_position: Vector2) -> String:
 		if row_idx != INVALID_ROW:
 			var cell_idx := find_cell_at_position(row_idx, at_position)
 			if cell_idx != INVALID_CELL:
-				return str(get_cell_value(row_idx, cell_idx))
+				return stringify_cell(row_idx, cell_idx)
 
 	return get_tooltip_text()
 
@@ -764,6 +764,14 @@ func get_cell_hint_string(row_idx: int, column_idx: int) -> String:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"hint_string"]
 
 
+func stringify_cell(row_idx: int, column_idx: int) -> String:
+	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
+
+	var stringifier: Callable = cell.type_hint.stringifier
+	if stringifier.is_valid():
+		return stringifier.call(cell.value)
+
+	return str(cell.value)
 
 
 
