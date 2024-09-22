@@ -100,6 +100,9 @@ var _row_alternate: StyleBox = null
 var _column_normal: StyleBox = null
 var _column_hover: StyleBox = null
 var _column_pressed: StyleBox = null
+
+var _checked: Texture2D = null
+var _unchecked: Texture2D = null
 #endregion
 
 
@@ -163,7 +166,12 @@ func _notification(what: int) -> void:
 
 					rect = inner_margin_rect(rect)
 					draw_rect(rect, Color(cell.color, 0.25))
-					draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
+
+					if cell.type_hint.type == Type.BOOL:
+						var texture: Texture2D = _checked if cell.value else _unchecked
+						texture.draw(get_canvas_item(), get_text_position(rect, texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+					else:
+						draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
 
 			for column: Dictionary in _columns:
 				if not column.visible:
@@ -220,7 +228,11 @@ func _notification(what: int) -> void:
 					if not drawable_rect.intersects(rect):
 						continue
 
-					draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
+					if cell.type_hint.type == Type.BOOL:
+						var texture: Texture2D = _checked if cell.value else _unchecked
+						texture.draw(_canvas, get_text_position(inner_margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+					else:
+						draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
 
 			for column: Dictionary in _columns:
 				if not column.visible:
@@ -263,6 +275,9 @@ func _notification(what: int) -> void:
 			_column_hover = get_theme_stylebox(&"column_hover", &"TableView")
 			_column_normal = get_theme_stylebox(&"column_normal", &"TableView")
 			_column_pressed = get_theme_stylebox(&"column_pressed", &"TableView")
+			# INFO: To avoid adding custom icons, used icons from Tree.
+			_checked = get_theme_icon(&"checked", &"Tree")
+			_unchecked = get_theme_icon(&"unchecked", &"Tree")
 
 		NOTIFICATION_ENTER_CANVAS:
 			_canvas = RenderingServer.canvas_item_create()
