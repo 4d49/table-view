@@ -132,6 +132,7 @@ func _init() -> void:
 	_h_scroll.value_changed.connect(_on_scroll_value_changed)
 	self.add_child(_h_scroll)
 
+	self.cell_double_clicked.connect(_on_cell_double_click)
 	self.row_clicked.connect(select_single_row)
 
 @warning_ignore("unsafe_call_argument")
@@ -577,9 +578,20 @@ static func type_hint_create(
 		hint: Hint,
 		hint_string: String,
 		stringifier: Callable,
+		edit_handler: Callable,
 	) -> Dictionary[StringName, Variant]:
 
-	return {&"type": type, &"hint": hint, &"hint_string": hint_string, &"stringifier": stringifier}
+	return {
+		&"type": type,
+		&"hint": hint,
+		&"hint_string": hint_string,
+		&"stringifier": stringifier,
+		&"edit_handler": edit_handler,
+	}
+
+
+func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callable:
+	return Callable()
 
 
 func add_column(
@@ -588,6 +600,7 @@ func add_column(
 		hint: Hint = Hint.NONE,
 		hint_string: String = "",
 		stringifier: Callable = stringifier_default(type, hint, hint_string),
+		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
 	) -> int:
 
 	var text_line := TextLine.new()
@@ -600,7 +613,13 @@ func add_column(
 		&"dirty": true,
 		&"visible": true,
 		&"text_line": text_line,
-		&"type_hint": type_hint_create(type, hint, hint_string, stringifier),
+		&"type_hint": type_hint_create(
+			type,
+			hint,
+			hint_string,
+			stringifier,
+			edit_handler,
+		),
 		&"draw_mode": DrawMode.NORMAL,
 	}
 
@@ -790,9 +809,16 @@ func set_cell_custom_type(
 		hint: Hint = Hint.NONE,
 		hint_string: String = "",
 		stringifier: Callable = stringifier_default(type, hint, hint_string),
+		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
 	) -> void:
 
-	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(type, hint, hint_string, stringifier)
+	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(
+		type,
+		hint,
+		hint_string,
+		stringifier,
+		edit_handler,
+	)
 
 func get_cell_type(row_idx: int, column_idx: int) -> Type:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"type"]
@@ -802,6 +828,9 @@ func get_cell_hint(row_idx: int, column_idx: int) -> Hint:
 
 func get_cell_hint_string(row_idx: int, column_idx: int) -> String:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"hint_string"]
+
+func get_cell_edit_handler(row_idx: int, column_idx: int) -> Callable:
+	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"edit_handler"]
 
 
 func stringify_cell(row_idx: int, column_idx: int) -> String:
@@ -870,6 +899,28 @@ func _horizontal_scroll(pages: float) -> bool:
 	return _h_scroll.get_value() != prev_value
 
 
+
+
+func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
+	var row: Dictionary = _rows[row_idx]
+	var cell: Dictionary = row[&"cells"][column_idx]
+
+	var edit_handler: Callable = cell.type_hint.edit_handler
+	if not edit_handler.is_valid():
+		return
+
+	var setter: Callable = func set_value(value: Variant) -> void:
+		if is_same(cell.value, value):
+			return
+
+		cell.value = value
+		row.dirty = true
+
+		queue_redraw()
+	var getter: Callable = func get_value() -> Variant:
+		return cell.value
+
+	edit_handler.call(setter, getter)
 
 
 func _on_scroll_value_changed(_value) -> void:
