@@ -8,16 +8,6 @@ content_margin_top = 4.0
 content_margin_right = 4.0
 content_margin_bottom = 4.0
 bg_color = Color(0.180392, 0.239216, 0.301961, 1)
-corner_detail = 1
-anti_aliasing = false
-
-[sub_resource type="StyleBoxFlat" id="cell_edit_focus"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(0.180392, 0.239216, 0.301961, 1)
-draw_center = false
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
@@ -25,6 +15,8 @@ border_width_bottom = 1
 border_color = Color(0.439216, 0.729412, 0.980392, 1)
 corner_detail = 1
 anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="cell_edit_empty"]
 
 [sub_resource type="StyleBoxFlat" id="column_hover"]
 bg_color = Color(0.184314, 0.192157, 0.215686, 1)
@@ -95,7 +87,7 @@ TableView/constants/inner_margin_top = 4
 TableView/font_sizes/font_size = 14
 TableView/fonts/font = ExtResource("1_12j1h")
 TableView/styles/cell_edit = SubResource("cell_edit")
-TableView/styles/cell_edit_focus = SubResource("cell_edit_focus")
+TableView/styles/cell_edit_empty = SubResource("cell_edit_empty")
 TableView/styles/column_hover = SubResource("column_hover")
 TableView/styles/column_normal = SubResource("column_normal")
 TableView/styles/column_pressed = SubResource("column_pressed")

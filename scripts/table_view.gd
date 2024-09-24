@@ -58,6 +58,10 @@ enum SelectMode {
 	MULTI_ROW,
 }
 
+
+const DEFAULT_NUM_MIN = -2147483648
+const DEFAULT_NUM_MAX =  2147483647
+
 const INVALID_COLUMN: int = -1
 const INVALID_ROW: int = -1
 const INVALID_CELL: int = -1
@@ -106,7 +110,7 @@ var _column_hover: StyleBox = null
 var _column_pressed: StyleBox = null
 
 var _cell_edit: StyleBox = null
-var _cell_edit_focus: StyleBox = null
+var _cell_edit_empty: StyleBox = null
 
 var _checked: Texture2D = null
 var _unchecked: Texture2D = null
@@ -291,7 +295,7 @@ func _notification(what: int) -> void:
 			_column_pressed = get_theme_stylebox(&"column_pressed", &"TableView")
 
 			_cell_edit = get_theme_stylebox(&"cell_edit", &"TableView")
-			_cell_edit_focus = get_theme_stylebox(&"cell_edit_focus", &"TableView")
+			_cell_edit_empty = get_theme_stylebox(&"cell_edit_empty", &"TableView")
 
 			# INFO: To avoid adding custom icons, used icons from Tree.
 			_checked = get_theme_icon(&"checked", &"Tree")
@@ -597,11 +601,57 @@ static func type_hint_create(
 	}
 
 
+static func range_to_hint_string(min: float, max: float, step: float = 0.001) -> String:
+	return String.num(min, NUMBERS_AFTER_DOT) + "," + String.num(max, NUMBERS_AFTER_DOT) + "," + String.num(maxf(step, 0.001), NUMBERS_AFTER_DOT)
+
+static func hint_string_to_range(hint_string: String) -> PackedFloat64Array:
+	var split: PackedStringArray = hint_string.split(",")
+
+	return [
+		split[0].to_float() if split.size() > 0 and split[0].is_valid_float() else DEFAULT_NUM_MIN,
+		split[1].to_float() if split.size() > 1 and split[1].is_valid_float() else DEFAULT_NUM_MAX,
+		split[2].to_float() if split.size() > 2 and split[2].is_valid_float() else 0.001,
+	]
+
+
 func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callable:
 	match type:
 		Type.BOOL:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				setter.call(not getter.call())
+
+		Type.INT, Type.FLOAT:
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var spin_box := SpinBox.new()
+				spin_box.set_use_rounded_values(type == Type.INT)
+
+				var range := hint_string_to_range(hint_string)
+				spin_box.set_min(range[0])
+				spin_box.set_max(range[1])
+				spin_box.set_step(maxf(range[2], 1.0) if type == Type.INT else range[2])
+				spin_box.set_value(getter.call())
+
+				if type == Type.INT:
+					spin_box.value_changed.connect(func(value: int) -> void:
+						setter.call(value)
+					)
+				else:
+					spin_box.value_changed.connect(setter)
+
+				var line_edit := spin_box.get_line_edit()
+				line_edit.add_theme_font_override(&"font", _font)
+				line_edit.add_theme_font_size_override(&"font_size", _font_size)
+				line_edit.add_theme_color_override(&"font_color", _font_color)
+				line_edit.add_theme_constant_override(&"outline_size", _font_outline_size)
+				line_edit.add_theme_color_override(&"font_outline_color", _font_outline_color)
+				line_edit.add_theme_stylebox_override(&"normal", _cell_edit)
+				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_empty)
+
+				self.add_child(spin_box)
+
+				var rect := scrolled_rect(cell.rect)
+				spin_box.set_position(rect.position)
+				spin_box.set_size(rect.size)
 
 		Type.STRING, Type.STRING_NAME:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
@@ -612,7 +662,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				line_edit.add_theme_constant_override(&"outline_size", _font_outline_size)
 				line_edit.add_theme_color_override(&"font_outline_color", _font_outline_color)
 				line_edit.add_theme_stylebox_override(&"normal", _cell_edit)
-				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_focus)
+				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_empty)
 				line_edit.set_text(getter.call())
 
 				if type == Type.STRING_NAME:
