@@ -58,6 +58,10 @@ enum SelectMode {
 	MULTI_ROW,
 }
 
+
+const DEFAULT_NUM_MIN = -2147483648
+const DEFAULT_NUM_MAX =  2147483647
+
 const INVALID_COLUMN: int = -1
 const INVALID_ROW: int = -1
 const INVALID_CELL: int = -1
@@ -80,6 +84,8 @@ var _columns: Array[Dictionary] = []
 var _rows: Array[Dictionary] = []
 
 var _canvas: RID = RID()
+
+var _cell_editor: Node = null
 
 #region theme cache
 var _inner_margin_left: float = 0
@@ -104,6 +110,9 @@ var _row_alternate: StyleBox = null
 var _column_normal: StyleBox = null
 var _column_hover: StyleBox = null
 var _column_pressed: StyleBox = null
+
+var _cell_edit: StyleBox = null
+var _cell_edit_empty: StyleBox = null
 
 var _checked: Texture2D = null
 var _unchecked: Texture2D = null
@@ -132,6 +141,7 @@ func _init() -> void:
 	_h_scroll.value_changed.connect(_on_scroll_value_changed)
 	self.add_child(_h_scroll)
 
+	self.cell_double_clicked.connect(_on_cell_double_click)
 	self.row_clicked.connect(select_single_row)
 
 @warning_ignore("unsafe_call_argument")
@@ -141,6 +151,11 @@ func _notification(what: int) -> void:
 			update_table(true)
 
 		NOTIFICATION_DRAW when DEBUG_ENABLED:
+			if is_dirty():
+				update_table()
+
+			update_cell_editor_position_and_size()
+
 			draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.BLACK, 0.5))
 			if has_focus():
 				draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.RED, 0.5), false, 2.0)
@@ -193,15 +208,20 @@ func _notification(what: int) -> void:
 				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, rect)
 
 		NOTIFICATION_DRAW:
+			if is_dirty():
+				update_table()
+
+			update_cell_editor_position_and_size()
+
 			_panel.draw(get_canvas_item(), Rect2(Vector2.ZERO, get_size()))
 			if has_focus():
 				_focus.draw(get_canvas_item(), Rect2(Vector2.ZERO, get_size()))
 
 			RenderingServer.canvas_item_clear(_canvas)
-			RenderingServer.canvas_item_set_clip(_canvas, true)
 
 			var drawable_rect: Rect2 = get_drawable_rect()
 			RenderingServer.canvas_item_set_custom_rect(_canvas, true, drawable_rect)
+			RenderingServer.canvas_item_set_clip(_canvas, true)
 
 			var draw_begun: bool = false
 			for i: int in _rows.size():
@@ -285,6 +305,10 @@ func _notification(what: int) -> void:
 			_column_hover = get_theme_stylebox(&"column_hover", &"TableView")
 			_column_normal = get_theme_stylebox(&"column_normal", &"TableView")
 			_column_pressed = get_theme_stylebox(&"column_pressed", &"TableView")
+
+			_cell_edit = get_theme_stylebox(&"cell_edit", &"TableView")
+			_cell_edit_empty = get_theme_stylebox(&"cell_edit_empty", &"TableView")
+
 			# INFO: To avoid adding custom icons, used icons from Tree.
 			_checked = get_theme_icon(&"checked", &"Tree")
 			_unchecked = get_theme_icon(&"unchecked", &"Tree")
@@ -548,6 +572,22 @@ func update_table(force: bool = false) -> void:
 	queue_redraw()
 
 
+func update_cell_editor_position_and_size() -> void:
+	if not is_instance_valid(_cell_editor) or not _cell_editor.has_meta(&"cell"):
+		return
+
+	var cell: Dictionary = _cell_editor.get_meta(&"cell")
+	var rect: Rect2 = scrolled_rect(cell.rect)
+
+	if _cell_editor.has_method(&"set_position"):
+		_cell_editor.call(&"set_position", rect.position)
+	if _cell_editor.has_method(&"set_size"):
+		_cell_editor.call(&"set_size", rect.size)
+
+	if _cell_editor.has_method(&"popup"):
+		_cell_editor.call(&"popup")
+
+
 static func color_to_string_no_alpha(color: Color) -> String:
 	return (
 		  "R: " + str(color.r).pad_decimals(NUMBERS_AFTER_DOT) +
@@ -577,9 +617,138 @@ static func type_hint_create(
 		hint: Hint,
 		hint_string: String,
 		stringifier: Callable,
+		edit_handler: Callable,
 	) -> Dictionary[StringName, Variant]:
 
-	return {&"type": type, &"hint": hint, &"hint_string": hint_string, &"stringifier": stringifier}
+	return {
+		&"type": type,
+		&"hint": hint,
+		&"hint_string": hint_string,
+		&"stringifier": stringifier,
+		&"edit_handler": edit_handler,
+	}
+
+
+static func range_to_hint_string(min: float, max: float, step: float = 0.001) -> String:
+	return String.num(min, NUMBERS_AFTER_DOT) + "," + String.num(max, NUMBERS_AFTER_DOT) + "," + String.num(maxf(step, 0.001), NUMBERS_AFTER_DOT)
+
+static func hint_string_to_range(hint_string: String) -> PackedFloat64Array:
+	var split: PackedStringArray = hint_string.split(",")
+
+	return [
+		split[0].to_float() if split.size() > 0 and split[0].is_valid_float() else DEFAULT_NUM_MIN,
+		split[1].to_float() if split.size() > 1 and split[1].is_valid_float() else DEFAULT_NUM_MAX,
+		split[2].to_float() if split.size() > 2 and split[2].is_valid_float() else 0.001,
+	]
+
+
+func set_cell_editor(cell_editor: Node) -> void:
+	if is_instance_valid(_cell_editor):
+		_cell_editor.queue_free()
+
+	if is_instance_valid(cell_editor) and cell_editor.has_method(&"get_canvas_item"):
+		RenderingServer.canvas_item_set_parent(cell_editor.call(&"get_canvas_item"), _canvas)
+
+	_cell_editor = cell_editor
+
+
+func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callable:
+	match type:
+		Type.BOOL:
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				setter.call(not getter.call())
+
+		Type.INT, Type.FLOAT:
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var spin_box := SpinBox.new()
+				spin_box.set_use_rounded_values(type == Type.INT)
+
+				var range := hint_string_to_range(hint_string)
+				spin_box.set_min(range[0])
+				spin_box.set_max(range[1])
+				spin_box.set_step(maxf(range[2], 1.0) if type == Type.INT else range[2])
+				spin_box.set_value(getter.call())
+
+				if type == Type.INT:
+					spin_box.value_changed.connect(func(value: int) -> void:
+						setter.call(value)
+					)
+				else:
+					spin_box.value_changed.connect(setter)
+
+				var line_edit := spin_box.get_line_edit()
+				line_edit.add_theme_font_override(&"font", _font)
+				line_edit.add_theme_font_size_override(&"font_size", _font_size)
+				line_edit.add_theme_color_override(&"font_color", _font_color)
+				line_edit.add_theme_constant_override(&"outline_size", _font_outline_size)
+				line_edit.add_theme_color_override(&"font_outline_color", _font_outline_color)
+				line_edit.add_theme_stylebox_override(&"normal", _cell_edit)
+				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_empty)
+
+				self.add_child(spin_box)
+
+				var rect := scrolled_rect(cell.rect)
+				spin_box.set_position(rect.position)
+				spin_box.set_size(rect.size)
+
+				spin_box.set_meta(&"cell", cell)
+				self.set_cell_editor(spin_box)
+
+		Type.STRING, Type.STRING_NAME:
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var line_edit := LineEdit.new()
+				line_edit.add_theme_font_override(&"font", _font)
+				line_edit.add_theme_font_size_override(&"font_size", _font_size)
+				line_edit.add_theme_color_override(&"font_color", _font_color)
+				line_edit.add_theme_constant_override(&"outline_size", _font_outline_size)
+				line_edit.add_theme_color_override(&"font_outline_color", _font_outline_color)
+				line_edit.add_theme_stylebox_override(&"normal", _cell_edit)
+				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_empty)
+				line_edit.set_text(getter.call())
+
+				if type == Type.STRING_NAME:
+					line_edit.text_changed.connect(func(text: StringName) -> void:
+						setter.call(text)
+					)
+				else:
+					line_edit.text_changed.connect(setter)
+
+				self.add_child(line_edit)
+
+				var rect := scrolled_rect(cell.rect)
+				line_edit.set_position(rect.position)
+				line_edit.set_size(rect.size)
+
+				line_edit.set_meta(&"cell", cell)
+				self.set_cell_editor(line_edit)
+
+		Type.COLOR:
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var panel := PopupPanel.new()
+				panel.add_theme_stylebox_override(&"panel", _cell_edit)
+				panel.focus_exited.connect(panel.queue_free)
+
+				var color_picker := ColorPicker.new()
+				color_picker.set_edit_alpha(hint != Hint.COLOR_NO_ALPHA)
+				color_picker.set_pick_color(getter.call())
+				color_picker.set_presets_visible(false)
+				color_picker.set_sampler_visible(false)
+				color_picker.set_modes_visible(false)
+				color_picker.color_changed.connect(setter)
+				panel.add_child(color_picker)
+
+				self.add_child(panel)
+
+				var rect := scrolled_rect(cell.rect)
+				panel.set_position(rect.position)
+				panel.set_size(rect.size)
+
+				panel.set_meta(&"cell", cell)
+				self.set_cell_editor(panel)
+
+				panel.popup()
+
+	return Callable()
 
 
 func add_column(
@@ -588,6 +757,7 @@ func add_column(
 		hint: Hint = Hint.NONE,
 		hint_string: String = "",
 		stringifier: Callable = stringifier_default(type, hint, hint_string),
+		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
 	) -> int:
 
 	var text_line := TextLine.new()
@@ -600,7 +770,13 @@ func add_column(
 		&"dirty": true,
 		&"visible": true,
 		&"text_line": text_line,
-		&"type_hint": type_hint_create(type, hint, hint_string, stringifier),
+		&"type_hint": type_hint_create(
+			type,
+			hint,
+			hint_string,
+			stringifier,
+			edit_handler,
+		),
 		&"draw_mode": DrawMode.NORMAL,
 	}
 
@@ -790,9 +966,16 @@ func set_cell_custom_type(
 		hint: Hint = Hint.NONE,
 		hint_string: String = "",
 		stringifier: Callable = stringifier_default(type, hint, hint_string),
+		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
 	) -> void:
 
-	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(type, hint, hint_string, stringifier)
+	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(
+		type,
+		hint,
+		hint_string,
+		stringifier,
+		edit_handler,
+	)
 
 func get_cell_type(row_idx: int, column_idx: int) -> Type:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"type"]
@@ -802,6 +985,9 @@ func get_cell_hint(row_idx: int, column_idx: int) -> Hint:
 
 func get_cell_hint_string(row_idx: int, column_idx: int) -> String:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"hint_string"]
+
+func get_cell_edit_handler(row_idx: int, column_idx: int) -> Callable:
+	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"edit_handler"]
 
 
 func stringify_cell(row_idx: int, column_idx: int) -> String:
@@ -870,6 +1056,28 @@ func _horizontal_scroll(pages: float) -> bool:
 	return _h_scroll.get_value() != prev_value
 
 
+
+
+func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
+	var row: Dictionary = _rows[row_idx]
+	var cell: Dictionary = row[&"cells"][column_idx]
+
+	var edit_handler: Callable = cell.type_hint.edit_handler
+	if not edit_handler.is_valid():
+		return
+
+	var setter: Callable = func set_value(value: Variant) -> void:
+		if is_same(cell.value, value):
+			return
+
+		cell.value = value
+		row.dirty = true
+
+		mark_dirty()
+	var getter: Callable = func get_value() -> Variant:
+		return cell.value
+
+	edit_handler.call(cell, setter, getter)
 
 
 func _on_scroll_value_changed(_value) -> void:
