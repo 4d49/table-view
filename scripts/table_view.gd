@@ -722,6 +722,32 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				line_edit.set_meta(&"cell", cell)
 				self.set_cell_editor(line_edit)
 
+		Type.COLOR:
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var panel := PopupPanel.new()
+				panel.add_theme_stylebox_override(&"panel", _cell_edit)
+				panel.focus_exited.connect(panel.queue_free)
+
+				var color_picker := ColorPicker.new()
+				color_picker.set_edit_alpha(hint != Hint.COLOR_NO_ALPHA)
+				color_picker.set_pick_color(getter.call())
+				color_picker.set_presets_visible(false)
+				color_picker.set_sampler_visible(false)
+				color_picker.set_modes_visible(false)
+				color_picker.color_changed.connect(setter)
+				panel.add_child(color_picker)
+
+				self.add_child(panel)
+
+				var rect := scrolled_rect(cell.rect)
+				panel.set_position(rect.position)
+				panel.set_size(rect.size)
+
+				panel.set_meta(&"cell", cell)
+				self.set_cell_editor(panel)
+
+				panel.popup()
+
 	return Callable()
 
 
