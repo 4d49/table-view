@@ -151,6 +151,9 @@ func _notification(what: int) -> void:
 			update_table(true)
 
 		NOTIFICATION_DRAW when DEBUG_ENABLED:
+			if is_dirty():
+				update_table()
+
 			draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.BLACK, 0.5))
 			if has_focus():
 				draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.RED, 0.5), false, 2.0)
@@ -203,6 +206,9 @@ func _notification(what: int) -> void:
 				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, rect)
 
 		NOTIFICATION_DRAW:
+			if is_dirty():
+				update_table()
+
 			_panel.draw(get_canvas_item(), Rect2(Vector2.ZERO, get_size()))
 			if has_focus():
 				_focus.draw(get_canvas_item(), Rect2(Vector2.ZERO, get_size()))
@@ -1019,7 +1025,7 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 		cell.value = value
 		row.dirty = true
 
-		queue_redraw()
+		mark_dirty()
 	var getter: Callable = func get_value() -> Variant:
 		return cell.value
 
