@@ -591,6 +591,11 @@ static func type_hint_create(
 
 
 func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callable:
+	match type:
+		Type.BOOL:
+			return func(setter: Callable, getter: Callable) -> void:
+				setter.call(not getter.call())
+
 	return Callable()
 
 
