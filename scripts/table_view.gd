@@ -85,6 +85,8 @@ var _rows: Array[Dictionary] = []
 
 var _canvas: RID = RID()
 
+var _cell_editor: Control = null
+
 #region theme cache
 var _inner_margin_left: float = 0
 var _inner_margin_right: float = 0
@@ -614,6 +616,16 @@ static func hint_string_to_range(hint_string: String) -> PackedFloat64Array:
 	]
 
 
+func set_cell_editor(cell_editor: Control) -> void:
+	if is_instance_valid(_cell_editor):
+		_cell_editor.queue_free()
+
+	if is_instance_valid(cell_editor):
+		RenderingServer.canvas_item_set_parent(cell_editor.get_canvas_item(), _canvas)
+
+	_cell_editor = cell_editor
+
+
 func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callable:
 	match type:
 		Type.BOOL:
@@ -653,6 +665,8 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				spin_box.set_position(rect.position)
 				spin_box.set_size(rect.size)
 
+				self.set_cell_editor(spin_box)
+
 		Type.STRING, Type.STRING_NAME:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				var line_edit := LineEdit.new()
@@ -678,8 +692,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				line_edit.set_position(rect.position)
 				line_edit.set_size(rect.size)
 
-				line_edit.focus_exited.connect(line_edit.queue_free)
-				line_edit.grab_focus()
+				self.set_cell_editor(line_edit)
 
 	return Callable()
 
