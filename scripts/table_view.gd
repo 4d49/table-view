@@ -105,6 +105,9 @@ var _column_normal: StyleBox = null
 var _column_hover: StyleBox = null
 var _column_pressed: StyleBox = null
 
+var _cell_edit: StyleBox = null
+var _cell_edit_focus: StyleBox = null
+
 var _checked: Texture2D = null
 var _unchecked: Texture2D = null
 #endregion
@@ -286,6 +289,10 @@ func _notification(what: int) -> void:
 			_column_hover = get_theme_stylebox(&"column_hover", &"TableView")
 			_column_normal = get_theme_stylebox(&"column_normal", &"TableView")
 			_column_pressed = get_theme_stylebox(&"column_pressed", &"TableView")
+
+			_cell_edit = get_theme_stylebox(&"cell_edit", &"TableView")
+			_cell_edit_focus = get_theme_stylebox(&"cell_edit_focus", &"TableView")
+
 			# INFO: To avoid adding custom icons, used icons from Tree.
 			_checked = get_theme_icon(&"checked", &"Tree")
 			_unchecked = get_theme_icon(&"unchecked", &"Tree")
@@ -595,6 +602,34 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 		Type.BOOL:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				setter.call(not getter.call())
+
+		Type.STRING, Type.STRING_NAME:
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var line_edit := LineEdit.new()
+				line_edit.add_theme_font_override(&"font", _font)
+				line_edit.add_theme_font_size_override(&"font_size", _font_size)
+				line_edit.add_theme_color_override(&"font_color", _font_color)
+				line_edit.add_theme_constant_override(&"outline_size", _font_outline_size)
+				line_edit.add_theme_color_override(&"font_outline_color", _font_outline_color)
+				line_edit.add_theme_stylebox_override(&"normal", _cell_edit)
+				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_focus)
+				line_edit.set_text(getter.call())
+
+				if type == Type.STRING_NAME:
+					line_edit.text_changed.connect(func(text: StringName) -> void:
+						setter.call(text)
+					)
+				else:
+					line_edit.text_changed.connect(setter)
+
+				self.add_child(line_edit)
+
+				var rect := scrolled_rect(cell.rect)
+				line_edit.set_position(rect.position)
+				line_edit.set_size(rect.size)
+
+				line_edit.focus_exited.connect(line_edit.queue_free)
+				line_edit.grab_focus()
 
 	return Callable()
 
