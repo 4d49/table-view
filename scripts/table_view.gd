@@ -154,6 +154,8 @@ func _notification(what: int) -> void:
 			if is_dirty():
 				update_table()
 
+			update_cell_editor_position_and_size()
+
 			draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.BLACK, 0.5))
 			if has_focus():
 				draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.RED, 0.5), false, 2.0)
@@ -208,6 +210,8 @@ func _notification(what: int) -> void:
 		NOTIFICATION_DRAW:
 			if is_dirty():
 				update_table()
+
+			update_cell_editor_position_and_size()
 
 			_panel.draw(get_canvas_item(), Rect2(Vector2.ZERO, get_size()))
 			if has_focus():
@@ -568,6 +572,17 @@ func update_table(force: bool = false) -> void:
 	queue_redraw()
 
 
+func update_cell_editor_position_and_size() -> void:
+	if not is_instance_valid(_cell_editor) or not _cell_editor.has_meta(&"cell"):
+		return
+
+	var cell: Dictionary = _cell_editor.get_meta(&"cell")
+	var rect: Rect2 = scrolled_rect(cell.rect)
+
+	_cell_editor.set_position(rect.position)
+	_cell_editor.set_size(rect.size)
+
+
 static func color_to_string_no_alpha(color: Color) -> String:
 	return (
 		  "R: " + str(color.r).pad_decimals(NUMBERS_AFTER_DOT) +
@@ -671,6 +686,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				spin_box.set_position(rect.position)
 				spin_box.set_size(rect.size)
 
+				spin_box.set_meta(&"cell", cell)
 				self.set_cell_editor(spin_box)
 
 		Type.STRING, Type.STRING_NAME:
@@ -698,6 +714,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				line_edit.set_position(rect.position)
 				line_edit.set_size(rect.size)
 
+				line_edit.set_meta(&"cell", cell)
 				self.set_cell_editor(line_edit)
 
 	return Callable()
