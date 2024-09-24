@@ -218,10 +218,10 @@ func _notification(what: int) -> void:
 				_focus.draw(get_canvas_item(), Rect2(Vector2.ZERO, get_size()))
 
 			RenderingServer.canvas_item_clear(_canvas)
-			RenderingServer.canvas_item_set_clip(_canvas, true)
 
 			var drawable_rect: Rect2 = get_drawable_rect()
 			RenderingServer.canvas_item_set_custom_rect(_canvas, true, drawable_rect)
+			RenderingServer.canvas_item_set_clip(_canvas, true)
 
 			var draw_begun: bool = false
 			for i: int in _rows.size():
