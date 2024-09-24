@@ -85,7 +85,7 @@ var _rows: Array[Dictionary] = []
 
 var _canvas: RID = RID()
 
-var _cell_editor: Control = null
+var _cell_editor: Node = null
 
 #region theme cache
 var _inner_margin_left: float = 0
@@ -579,8 +579,13 @@ func update_cell_editor_position_and_size() -> void:
 	var cell: Dictionary = _cell_editor.get_meta(&"cell")
 	var rect: Rect2 = scrolled_rect(cell.rect)
 
-	_cell_editor.set_position(rect.position)
-	_cell_editor.set_size(rect.size)
+	if _cell_editor.has_method(&"set_position"):
+		_cell_editor.call(&"set_position", rect.position)
+	if _cell_editor.has_method(&"set_size"):
+		_cell_editor.call(&"set_size", rect.size)
+
+	if _cell_editor.has_method(&"popup"):
+		_cell_editor.call(&"popup")
 
 
 static func color_to_string_no_alpha(color: Color) -> String:
@@ -637,12 +642,12 @@ static func hint_string_to_range(hint_string: String) -> PackedFloat64Array:
 	]
 
 
-func set_cell_editor(cell_editor: Control) -> void:
+func set_cell_editor(cell_editor: Node) -> void:
 	if is_instance_valid(_cell_editor):
 		_cell_editor.queue_free()
 
-	if is_instance_valid(cell_editor):
-		RenderingServer.canvas_item_set_parent(cell_editor.get_canvas_item(), _canvas)
+	if is_instance_valid(cell_editor) and cell_editor.has_method(&"get_canvas_item"):
+		RenderingServer.canvas_item_set_parent(cell_editor.call(&"get_canvas_item"), _canvas)
 
 	_cell_editor = cell_editor
 
