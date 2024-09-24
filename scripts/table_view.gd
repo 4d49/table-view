@@ -593,7 +593,7 @@ static func type_hint_create(
 func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callable:
 	match type:
 		Type.BOOL:
-			return func(setter: Callable, getter: Callable) -> void:
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				setter.call(not getter.call())
 
 	return Callable()
@@ -925,7 +925,7 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 	var getter: Callable = func get_value() -> Variant:
 		return cell.value
 
-	edit_handler.call(setter, getter)
+	edit_handler.call(cell, setter, getter)
 
 
 func _on_scroll_value_changed(_value) -> void:
