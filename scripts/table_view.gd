@@ -985,6 +985,13 @@ func get_column_hint(column_idx: int) -> Hint:
 func get_column_hint_string(column_idx: int) -> String:
 	return _columns[column_idx][&"type_hint"][&"hint_string"]
 
+## Sets the [Callable] that will be used to sort the column. If set invalid [Callable], sorting for the column will be disabled.
+func set_column_comparator(column_idx: int, comparator: Callable) -> void:
+	_columns[column_idx][&"comparator"] = comparator
+
+func get_column_comparator(column_idx: int) -> Callable:
+	return _columns[column_idx][&"comparator"]
+
 
 func get_column_sort_mode(column_idx: int) -> SortMode:
 	return _columns[column_idx][&"sort_mode"]
