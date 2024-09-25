@@ -603,6 +603,18 @@ static func color_to_string(color: Color) -> String:
 
 static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> Callable:
 	match type:
+		Type.INT when hint == Hint.ENUM:
+			var enumeration := hint_string_to_enum(hint_string)
+
+			var values: Dictionary[int, String] = {}
+			for key: StringName in enumeration:
+				values[enumeration[key]] = String(key)
+
+			values.make_read_only()
+
+			return func(value: int) -> String:
+				return values.get(value, "")
+
 		Type.FLOAT:
 			return hint_string.num.bind(NUMBERS_AFTER_DOT)
 		Type.COLOR:
