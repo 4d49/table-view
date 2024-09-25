@@ -1032,15 +1032,19 @@ func get_column_sort_mode(column_idx: int) -> SortMode:
 
 
 func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
-	var column: Dictionary = _columns[column_idx]
-	column.sort_mode = sort_mode
-
 	if sort_mode == SortMode.NONE:
 		return
+
+	var column: Dictionary = _columns[column_idx]
 
 	var comparator: Callable = column.comparator
 	if not comparator.is_valid():
 		return
+
+	for c: Dictionary in _columns:
+		c.sort_mode = SortMode.NONE
+
+	column.sort_mode = sort_mode
 
 	if sort_mode == SortMode.ASCENDING:
 		_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
