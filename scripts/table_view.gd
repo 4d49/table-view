@@ -618,7 +618,6 @@ static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> 
 
 		Type.INT when hint == Hint.FLAGS:
 			var flags := hint_string_to_flags(hint_string)
-			flags.make_read_only()
 
 			return func(value: int) -> String:
 				var string: String = ""
@@ -686,6 +685,7 @@ static func hint_string_to_enum(hint_string: String) -> Dictionary[StringName, i
 		else:
 			enumeration[StringName(subsplit[0])] = i
 
+	enumeration.make_read_only()
 	return enumeration
 
 
@@ -703,6 +703,7 @@ static func hint_string_to_flags(hint_string: String) -> Dictionary[StringName, 
 		else:
 			flags[StringName(subsplit[0])] = 1 << i
 
+	flags.make_read_only()
 	return flags
 
 
@@ -724,7 +725,6 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 
 		Type.INT when hint == Hint.ENUM:
 			var enumeration := hint_string_to_enum(hint_string)
-			enumeration.make_read_only()
 
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				var popup := PopupMenu.new()
