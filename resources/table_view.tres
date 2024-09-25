@@ -1,6 +1,8 @@
-[gd_resource type="Theme" load_steps=12 format=3 uid="uid://de8hd50qv2mti"]
+[gd_resource type="Theme" load_steps=14 format=3 uid="uid://de8hd50qv2mti"]
 
 [ext_resource type="FontFile" uid="uid://b7f6kvtay8epi" path="res://fonts/InterDisplay-Regular.woff2" id="1_12j1h"]
+[ext_resource type="Texture2D" uid="uid://b515sejpkrcjl" path="res://addons/table-view/icons/sort_ascending.svg" id="sort_ascending"]
+[ext_resource type="Texture2D" uid="uid://bogbcvmwpxojs" path="res://addons/table-view/icons/sort_descending.svg" id="sort_descending"]
 
 [sub_resource type="StyleBoxFlat" id="cell_edit"]
 content_margin_left = 4.0
@@ -86,6 +88,8 @@ TableView/constants/inner_margin_right = 4
 TableView/constants/inner_margin_top = 4
 TableView/font_sizes/font_size = 14
 TableView/fonts/font = ExtResource("1_12j1h")
+TableView/icons/sort_ascending = ExtResource("sort_ascending")
+TableView/icons/sort_descending = ExtResource("sort_descending")
 TableView/styles/cell_edit = SubResource("cell_edit")
 TableView/styles/cell_edit_empty = SubResource("cell_edit_empty")
 TableView/styles/column_hover = SubResource("column_hover")

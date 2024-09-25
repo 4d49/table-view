@@ -52,6 +52,11 @@ enum ColumnResizeMode {
 #	FIXED,
 #	RESIZE_TO_CONTENTS,
 }
+enum SortMode {
+	NONE,
+	ASCENDING,
+	DESCENDING,
+}
 enum SelectMode {
 	DISABLED,
 	SINGLE_ROW,
@@ -116,6 +121,9 @@ var _cell_edit_empty: StyleBox = null
 
 var _checked: Texture2D = null
 var _unchecked: Texture2D = null
+
+var _sort_ascending: Texture2D = null
+var _sort_descending: Texture2D = null
 #endregion
 
 
@@ -141,6 +149,7 @@ func _init() -> void:
 	_h_scroll.value_changed.connect(_on_scroll_value_changed)
 	self.add_child(_h_scroll)
 
+	self.column_clicked.connect(_on_column_clicked)
 	self.cell_double_clicked.connect(_on_cell_double_click)
 	self.row_clicked.connect(select_single_row)
 
@@ -280,6 +289,10 @@ func _notification(what: int) -> void:
 					DrawMode.PRESSED:
 						_column_pressed.draw(_canvas, rect)
 
+				var icon := get_sort_mode_icon(column.sort_mode)
+				if is_instance_valid(icon):
+					icon.draw(_canvas, get_text_position(inner_margin_rect(rect), icon.get_size(), HORIZONTAL_ALIGNMENT_RIGHT))
+
 				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
 
 		NOTIFICATION_THEME_CHANGED:
@@ -312,6 +325,9 @@ func _notification(what: int) -> void:
 			# INFO: To avoid adding custom icons, used icons from Tree.
 			_checked = get_theme_icon(&"checked", &"Tree")
 			_unchecked = get_theme_icon(&"unchecked", &"Tree")
+
+			_sort_ascending = get_theme_icon(&"sort_ascending", &"TableView")
+			_sort_descending = get_theme_icon(&"sort_descending", &"TableView")
 
 		NOTIFICATION_ENTER_CANVAS:
 			_canvas = RenderingServer.canvas_item_create()
@@ -467,6 +483,30 @@ func get_drawable_rect() -> Rect2i:
 
 	return drawable_rect.abs()
 
+
+func get_sort_mode_icon(sort_mode: SortMode) -> Texture2D:
+	match sort_mode:
+		SortMode.ASCENDING:
+			return _sort_ascending
+		SortMode.DESCENDING:
+			return _sort_descending
+
+	return null
+
+func calculate_column_rect(text_size: Vector2i, texture: Texture2D) -> Rect2i:
+	const H_SEPARATION = 4
+
+	var rect := Rect2i(Vector2i.ZERO, text_size)
+	if is_instance_valid(texture):
+		return rect.merge(Rect2i(
+				rect.position.x + rect.size.x + H_SEPARATION,
+				rect.position.y + rect.size.y / 2 - texture.get_height() / 2,
+				texture.get_width(), texture.get_height()
+			)
+		)
+
+	return rect
+
 @warning_ignore("unsafe_call_argument", "return_value_discarded", "narrowing_conversion")
 func update_table(force: bool = false) -> void:
 	if _columns.is_empty():
@@ -482,7 +522,7 @@ func update_table(force: bool = false) -> void:
 			text_line.clear()
 			text_line.add_string(column.title, _font, _font_size)
 
-		column.rect = Rect2i(Vector2i.ZERO, text_line.get_size())
+		column.rect = calculate_column_rect(text_line.get_size(), get_sort_mode_icon(column.sort_mode))
 		column.dirty = false
 	#endregion
 
@@ -883,6 +923,18 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 
 	return Callable()
 
+func default_comparator(type: Type, hint: Hint, hint_string: String) -> Callable:
+	match type:
+		Type.STRING, Type.STRING_NAME:
+			return func(a: String, b: String) -> bool:
+				return a < b
+		Type.COLOR:
+			return func(a: Color, b: Color) -> bool:
+				return hash(a) < hash(b)
+
+	return func(a: Variant, b: Variant) -> bool:
+		return a < b
+
 
 func add_column(
 		title: String,
@@ -891,6 +943,7 @@ func add_column(
 		hint_string: String = "",
 		stringifier: Callable = stringifier_default(type, hint, hint_string),
 		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
+		comparator: Callable = default_comparator(type, hint, hint_string),
 	) -> int:
 
 	var text_line := TextLine.new()
@@ -911,6 +964,8 @@ func add_column(
 			edit_handler,
 		),
 		&"draw_mode": DrawMode.NORMAL,
+		&"comparator": comparator,
+		&"sort_mode": SortMode.NONE,
 	}
 
 	if DEBUG_ENABLED:
@@ -963,6 +1018,44 @@ func get_column_hint(column_idx: int) -> Hint:
 
 func get_column_hint_string(column_idx: int) -> String:
 	return _columns[column_idx][&"type_hint"][&"hint_string"]
+
+## Sets the [Callable] that will be used to sort the column. If set invalid [Callable], sorting for the column will be disabled.
+func set_column_comparator(column_idx: int, comparator: Callable) -> void:
+	_columns[column_idx][&"comparator"] = comparator
+
+func get_column_comparator(column_idx: int) -> Callable:
+	return _columns[column_idx][&"comparator"]
+
+
+func get_column_sort_mode(column_idx: int) -> SortMode:
+	return _columns[column_idx][&"sort_mode"]
+
+
+func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
+	if sort_mode == SortMode.NONE:
+		return
+
+	var column: Dictionary = _columns[column_idx]
+
+	var comparator: Callable = column.comparator
+	if not comparator.is_valid():
+		return
+
+	for c: Dictionary in _columns:
+		c.sort_mode = SortMode.NONE
+
+	column.sort_mode = sort_mode
+
+	if sort_mode == SortMode.ASCENDING:
+		_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return comparator.call(a.cells[column_idx].value, b.cells[column_idx].value)
+		)
+	else:
+		_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return comparator.call(b.cells[column_idx].value, a.cells[column_idx].value)
+		)
+
+	update_table(true)
 
 
 
@@ -1189,6 +1282,12 @@ func _horizontal_scroll(pages: float) -> bool:
 	return _h_scroll.get_value() != prev_value
 
 
+
+func _on_column_clicked(column_idx: int) -> void:
+	if get_column_sort_mode(column_idx) == SortMode.ASCENDING:
+		sort_by_column(column_idx, SortMode.DESCENDING)
+	else:
+		sort_by_column(column_idx, SortMode.ASCENDING)
 
 
 func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
