@@ -289,6 +289,10 @@ func _notification(what: int) -> void:
 					DrawMode.PRESSED:
 						_column_pressed.draw(_canvas, rect)
 
+				var icon := get_sort_mode_icon(column.sort_mode)
+				if is_instance_valid(icon):
+					icon.draw(_canvas, get_text_position(inner_margin_rect(rect), icon.get_size(), HORIZONTAL_ALIGNMENT_RIGHT))
+
 				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
 
 		NOTIFICATION_THEME_CHANGED:
@@ -479,6 +483,30 @@ func get_drawable_rect() -> Rect2i:
 
 	return drawable_rect.abs()
 
+
+func get_sort_mode_icon(sort_mode: SortMode) -> Texture2D:
+	match sort_mode:
+		SortMode.ASCENDING:
+			return _sort_ascending
+		SortMode.DESCENDING:
+			return _sort_descending
+
+	return null
+
+func calculate_column_rect(text_size: Vector2i, texture: Texture2D) -> Rect2i:
+	const H_SEPARATION = 4
+
+	var rect := Rect2i(Vector2i.ZERO, text_size)
+	if is_instance_valid(texture):
+		return rect.merge(Rect2i(
+				rect.position.x + rect.size.x + H_SEPARATION,
+				rect.position.y + rect.size.y / 2 - texture.get_height() / 2,
+				texture.get_width(), texture.get_height()
+			)
+		)
+
+	return rect
+
 @warning_ignore("unsafe_call_argument", "return_value_discarded", "narrowing_conversion")
 func update_table(force: bool = false) -> void:
 	if _columns.is_empty():
@@ -494,7 +522,7 @@ func update_table(force: bool = false) -> void:
 			text_line.clear()
 			text_line.add_string(column.title, _font, _font_size)
 
-		column.rect = Rect2i(Vector2i.ZERO, text_line.get_size())
+		column.rect = calculate_column_rect(text_line.get_size(), get_sort_mode_icon(column.sort_mode))
 		column.dirty = false
 	#endregion
 
