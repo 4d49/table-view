@@ -233,8 +233,9 @@ func _notification(what: int) -> void:
 			RenderingServer.canvas_item_set_clip(_canvas, true)
 
 			var draw_begun: bool = false
-			for i: int in _rows.size():
-				var row: Dictionary = _rows[i]
+
+			var idx: int = 0
+			for row: Dictionary in _rows:
 				if not row.visible:
 					continue
 
@@ -249,7 +250,7 @@ func _notification(what: int) -> void:
 
 				if row.selected:
 					_row_selected.draw(_canvas, rect)
-				elif i % 2:
+				elif idx % 2:
 					_row_alternate.draw(_canvas, rect)
 				else:
 					_row_normal.draw(_canvas, rect)
@@ -272,6 +273,8 @@ func _notification(what: int) -> void:
 							RenderingServer.canvas_item_add_rect(_canvas, inner_margin_rect(rect), cell.value)
 						_:
 							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
+
+				idx += 1
 
 			for column: Dictionary in _columns:
 				if not column.visible:
