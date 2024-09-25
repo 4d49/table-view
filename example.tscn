@@ -11,14 +11,11 @@ extends PanelContainer
 
 
 enum ItemType {
-	WEAPON,
 	ARMOR,
-	POTION,
-	RING,
-	AMULET,
-	FOOD,
+	BOOK,
 	KEY,
-	MISC,
+	POTION,
+	WEAPON,
 }
 enum EquipType {
  	HEAD = 1<<0,
@@ -95,7 +92,7 @@ func create_item(index: int) -> Dictionary[StringName, Variant]:
 		&\"unique\": bool(index % 2),
 		&\"cost\": randi_range(COST_MIN, COST_MAX),
 		&\"weight\": snappedf(randf_range(WEIGHT_MIN, WEIGHT_MAX), 0.1),
-		&\"item_type\": randi_range(0, 7),
+		&\"item_type\": randi_range(0, 6),
 		&\"equip_type\": random_equip_type(),
 		&\"color\": Color(randf(), randf(), randf()),
 	}
