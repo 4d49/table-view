@@ -616,6 +616,19 @@ static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> 
 			return func(value: int) -> String:
 				return values.get(value, "")
 
+		Type.INT when hint == Hint.FLAGS:
+			var flags := hint_string_to_flags(hint_string)
+			flags.make_read_only()
+
+			return func(value: int) -> String:
+				var string: String = ""
+
+				for key: String in flags:
+					if value & flags[key]:
+						string += key + ", "
+
+				return string.left(-2)
+
 		Type.FLOAT:
 			return hint_string.num.bind(NUMBERS_AFTER_DOT)
 		Type.COLOR:
