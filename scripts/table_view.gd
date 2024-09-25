@@ -1226,6 +1226,19 @@ func stringify_cell(row_idx: int, column_idx: int) -> String:
 	return str(cell.value)
 
 
+func filter_rows_by_callable(column_idx: int, callable: Callable) -> void:
+	if not callable.is_valid():
+		return
+
+	for row: Dictionary in _rows:
+		if callable.call(row.cells[column_idx][&"value"]):
+			row.visible = true
+		else:
+			row.visible = false
+			row.selected = false
+
+	update_table(true)
+
 
 func find_column_at_position(point: Vector2) -> int:
 	for i: int in _columns.size():
