@@ -691,6 +691,35 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				setter.call(not getter.call())
 
+		Type.INT when hint == Hint.ENUM:
+			var enumeration := hint_string_to_enum(hint_string)
+			enumeration.make_read_only()
+
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var popup := PopupMenu.new()
+				popup.add_theme_font_override(&"font", _font)
+				popup.add_theme_font_size_override(&"font_size", _font_size)
+				popup.add_theme_color_override(&"font_color", _font_color)
+				popup.add_theme_constant_override(&"outline_size", _font_outline_size)
+				popup.add_theme_color_override(&"font_outline_color", _font_outline_color)
+				popup.add_theme_stylebox_override(&"panel", _cell_edit)
+
+				for key: String in enumeration:
+					popup.add_item(key, enumeration[key])
+
+				popup.id_pressed.connect(setter)
+				popup.focus_exited.connect(popup.queue_free)
+				self.add_child(popup)
+
+				var rect := scrolled_rect(cell.rect)
+				popup.set_position(rect.position)
+				popup.set_size(rect.size)
+
+				popup.set_meta(&"cell", cell)
+				self.set_cell_editor(popup)
+
+				popup.popup()
+
 		Type.INT, Type.FLOAT:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				var spin_box := SpinBox.new()
