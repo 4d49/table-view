@@ -883,6 +883,10 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 
 	return Callable()
 
+func default_comparator(type: Type, hint: Hint, hint_string: String) -> Callable:
+	return func(a: Variant, b: Variant) -> bool:
+		return a < b
+
 
 func add_column(
 		title: String,
@@ -891,6 +895,7 @@ func add_column(
 		hint_string: String = "",
 		stringifier: Callable = stringifier_default(type, hint, hint_string),
 		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
+		comparator: Callable = default_comparator(type, hint, hint_string),
 	) -> int:
 
 	var text_line := TextLine.new()
@@ -911,6 +916,7 @@ func add_column(
 			edit_handler,
 		),
 		&"draw_mode": DrawMode.NORMAL,
+		&"comparator": comparator,
 	}
 
 	if DEBUG_ENABLED:
