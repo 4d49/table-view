@@ -121,6 +121,9 @@ var _cell_edit_empty: StyleBox = null
 
 var _checked: Texture2D = null
 var _unchecked: Texture2D = null
+
+var _sort_ascending: Texture2D = null
+var _sort_descending: Texture2D = null
 #endregion
 
 
@@ -318,6 +321,9 @@ func _notification(what: int) -> void:
 			# INFO: To avoid adding custom icons, used icons from Tree.
 			_checked = get_theme_icon(&"checked", &"Tree")
 			_unchecked = get_theme_icon(&"unchecked", &"Tree")
+
+			_sort_ascending = get_theme_icon(&"sort_ascending", &"TableView")
+			_sort_descending = get_theme_icon(&"sort_descending", &"TableView")
 
 		NOTIFICATION_ENTER_CANVAS:
 			_canvas = RenderingServer.canvas_item_create()
