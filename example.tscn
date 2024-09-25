@@ -10,6 +10,21 @@ script/source = "# Copyright (c) 2024 Mansur Isaev and contributors - MIT Licens
 extends PanelContainer
 
 
+enum Direction {
+	NORTH,
+	EAST,
+	SOUTH,
+	WEST,
+}
+
+
+const COST_MIN = 0
+const COST_MAX = 9999
+
+const WEIGHT_MIN = 0.0
+const WEIGHT_MAX = 99.99
+
+
 @onready var table_view: TableView = $TableView
 @export_range(0, 10_000) var data_size: int = 10_000
 
@@ -20,11 +35,15 @@ func _ready() -> void:
 	var uid := table_view.add_column(\"UID\", TableView.Type.STRING_NAME)
 	var name := table_view.add_column(\"Name\", TableView.Type.STRING)
 	var unique := table_view.add_column(\"Unique\", TableView.Type.BOOL)
+	var description := table_view.add_column(\"Description\", TableView.Type.STRING)
+
 	# The third argument is the type of hint.
-	var description := table_view.add_column(\"Description\", TableView.Type.STRING, TableView.Hint.MULTILINE_TEXT)
 	# The fourth argument is a type hint string.
-	var cost := table_view.add_column(\"Cost\", TableView.Type.INT, TableView.Hint.RANGE, \"0,9999\")
-	var weight := table_view.add_column(\"Weight\", TableView.Type.FLOAT, TableView.Hint.RANGE, \"0.0,99.99,0.1\")
+	var cost := table_view.add_column(\"Cost\", TableView.Type.INT, TableView.Hint.RANGE, TableView.range_to_hint_string(COST_MIN, COST_MAX, 1))
+	var weight := table_view.add_column(\"Weight\", TableView.Type.FLOAT, TableView.Hint.RANGE, TableView.range_to_hint_string(WEIGHT_MIN, WEIGHT_MAX, 0.1))
+
+	# Create an enum column type.
+	var direction := table_view.add_column(\"Direction\", TableView.Type.INT, TableView.Hint.ENUM, TableView.enum_to_hint_string(Direction))
 
 	var color := table_view.add_column(\"Color\", TableView.Type.COLOR, TableView.Hint.COLOR_NO_ALPHA)
 
@@ -38,6 +57,7 @@ func _ready() -> void:
 		table_view.set_cell_value(row_idx, unique, data.unique)
 		table_view.set_cell_value(row_idx, cost, data.cost)
 		table_view.set_cell_value(row_idx, weight, data.weight)
+		table_view.set_cell_value(row_idx, direction, data.direction)
 		table_view.set_cell_value(row_idx, color, data.color)
 
 
@@ -47,8 +67,9 @@ func create_item(index: int) -> Dictionary[StringName, Variant]:
 		&\"name\": \"Item Name %d\" % index,
 		&\"description\": \"Item Description %d\" % index,
 		&\"unique\": bool(index % 2),
-		&\"cost\": randi_range(0, 9999),
-		&\"weight\": randf_range(0.0, 99.99),
+		&\"cost\": randi_range(COST_MIN, COST_MAX),
+		&\"weight\": snappedf(randf_range(WEIGHT_MIN, WEIGHT_MAX), 0.1),
+		&\"direction\": randi_range(0, 3),
 		&\"color\": Color(randf(), randf(), randf()),
 	}
 

@@ -38,7 +38,6 @@ enum Hint {
 	NONE = PROPERTY_HINT_NONE,
 	RANGE = PROPERTY_HINT_RANGE,
 	ENUM = PROPERTY_HINT_ENUM,
-	MULTILINE_TEXT = PROPERTY_HINT_MULTILINE_TEXT,
 	COLOR_NO_ALPHA = PROPERTY_HINT_COLOR_NO_ALPHA,
 }
 enum DrawMode {
@@ -604,6 +603,18 @@ static func color_to_string(color: Color) -> String:
 
 static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> Callable:
 	match type:
+		Type.INT when hint == Hint.ENUM:
+			var enumeration := hint_string_to_enum(hint_string)
+
+			var values: Dictionary[int, String] = {}
+			for key: StringName in enumeration:
+				values[enumeration[key]] = String(key)
+
+			values.make_read_only()
+
+			return func(value: int) -> String:
+				return values.get(value, "")
+
 		Type.FLOAT:
 			return hint_string.num.bind(NUMBERS_AFTER_DOT)
 		Type.COLOR:
@@ -642,6 +653,28 @@ static func hint_string_to_range(hint_string: String) -> PackedFloat64Array:
 	]
 
 
+static func enum_to_hint_string(enumeration: Dictionary) -> String:
+	var hint_string: String = ""
+
+	for key: String in enumeration:
+		hint_string += key + ":" + String.num_int64(enumeration[key]) + ","
+
+	return hint_string.left(-1)
+
+static func hint_string_to_enum(hint_string: String) -> Dictionary[StringName, int]:
+	var enumeration: Dictionary[StringName, int] = {}
+
+	var split: PackedStringArray = hint_string.split(",")
+	for i: int in split.size():
+		var subsplit: PackedStringArray = split[i].split(":")
+		if subsplit.size() > 1:
+			enumeration[StringName(subsplit[0])] = subsplit[1].to_int()
+		else:
+			enumeration[StringName(subsplit[0])] = i
+
+	return enumeration
+
+
 func set_cell_editor(cell_editor: Node) -> void:
 	if is_instance_valid(_cell_editor):
 		_cell_editor.queue_free()
@@ -657,6 +690,35 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 		Type.BOOL:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				setter.call(not getter.call())
+
+		Type.INT when hint == Hint.ENUM:
+			var enumeration := hint_string_to_enum(hint_string)
+			enumeration.make_read_only()
+
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var popup := PopupMenu.new()
+				popup.add_theme_font_override(&"font", _font)
+				popup.add_theme_font_size_override(&"font_size", _font_size)
+				popup.add_theme_color_override(&"font_color", _font_color)
+				popup.add_theme_constant_override(&"outline_size", _font_outline_size)
+				popup.add_theme_color_override(&"font_outline_color", _font_outline_color)
+				popup.add_theme_stylebox_override(&"panel", _cell_edit)
+
+				for key: String in enumeration:
+					popup.add_item(key, enumeration[key])
+
+				popup.id_pressed.connect(setter)
+				popup.focus_exited.connect(popup.queue_free)
+				self.add_child(popup)
+
+				var rect := scrolled_rect(cell.rect)
+				popup.set_position(rect.position)
+				popup.set_size(rect.size)
+
+				popup.set_meta(&"cell", cell)
+				self.set_cell_editor(popup)
+
+				popup.popup()
 
 		Type.INT, Type.FLOAT:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
