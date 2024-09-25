@@ -675,6 +675,23 @@ static func hint_string_to_enum(hint_string: String) -> Dictionary[StringName, i
 	return enumeration
 
 
+static func flags_to_hint_string(flags: Dictionary) -> String:
+	return enum_to_hint_string(flags)
+
+static func hint_string_to_flags(hint_string: String) -> Dictionary[StringName, int]:
+	var flags: Dictionary[StringName, int] = {}
+
+	var split: PackedStringArray = hint_string.split(",")
+	for i: int in split.size():
+		var subsplit: PackedStringArray = split[i].split(":")
+		if subsplit.size() > 1:
+			flags[StringName(subsplit[0])] = subsplit[1].to_int()
+		else:
+			flags[StringName(subsplit[0])] = 1 << i
+
+	return flags
+
+
 func set_cell_editor(cell_editor: Node) -> void:
 	if is_instance_valid(_cell_editor):
 		_cell_editor.queue_free()
