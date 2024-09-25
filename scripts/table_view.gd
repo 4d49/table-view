@@ -641,6 +641,28 @@ static func hint_string_to_range(hint_string: String) -> PackedFloat64Array:
 	]
 
 
+static func enum_to_hint_string(enumeration: Dictionary) -> String:
+	var hint_string: String = ""
+
+	for key: String in enumeration:
+		hint_string += key + ":" + String.num_int64(enumeration[key]) + ","
+
+	return hint_string.left(-1)
+
+static func hint_string_to_enum(hint_string: String) -> Dictionary[StringName, int]:
+	var enumeration: Dictionary[StringName, int] = {}
+
+	var split: PackedStringArray = hint_string.split(",")
+	for i: int in split.size():
+		var subsplit: PackedStringArray = split[i].split(":")
+		if subsplit.size() > 1:
+			enumeration[StringName(subsplit[0])] = subsplit[1].to_int()
+		else:
+			enumeration[StringName(subsplit[0])] = i
+
+	return enumeration
+
+
 func set_cell_editor(cell_editor: Node) -> void:
 	if is_instance_valid(_cell_editor):
 		_cell_editor.queue_free()
