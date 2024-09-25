@@ -10,13 +10,24 @@ script/source = "# Copyright (c) 2024 Mansur Isaev and contributors - MIT Licens
 extends PanelContainer
 
 
-enum Direction {
-	NORTH,
-	EAST,
-	SOUTH,
-	WEST,
+enum ItemType {
+	WEAPON,
+	ARMOR,
+	POTION,
+	RING,
+	AMULET,
+	FOOD,
+	KEY,
+	MISC,
 }
-
+enum EquipType {
+ 	HEAD = 1<<0,
+	CHEST = 1<<1,
+	HANDS = 1<<2,
+	LEGS = 1<<3,
+	FEET = 1<<4,
+	SHIELD = 1<<5,
+}
 
 const COST_MIN = 0
 const COST_MAX = 9999
@@ -43,7 +54,9 @@ func _ready() -> void:
 	var weight := table_view.add_column(\"Weight\", TableView.Type.FLOAT, TableView.Hint.RANGE, TableView.range_to_hint_string(WEIGHT_MIN, WEIGHT_MAX, 0.1))
 
 	# Create an enum column type.
-	var direction := table_view.add_column(\"Direction\", TableView.Type.INT, TableView.Hint.ENUM, TableView.enum_to_hint_string(Direction))
+	var item_type := table_view.add_column(\"Item Type\", TableView.Type.INT, TableView.Hint.ENUM, TableView.enum_to_hint_string(ItemType))
+	# Create a flags column type.
+	var equip_type := table_view.add_column(\"Equip Type\", TableView.Type.INT, TableView.Hint.FLAGS, TableView.flags_to_hint_string(EquipType))
 
 	var color := table_view.add_column(\"Color\", TableView.Type.COLOR, TableView.Hint.COLOR_NO_ALPHA)
 
@@ -57,9 +70,22 @@ func _ready() -> void:
 		table_view.set_cell_value(row_idx, unique, data.unique)
 		table_view.set_cell_value(row_idx, cost, data.cost)
 		table_view.set_cell_value(row_idx, weight, data.weight)
-		table_view.set_cell_value(row_idx, direction, data.direction)
+		table_view.set_cell_value(row_idx, item_type, data.item_type)
+		table_view.set_cell_value(row_idx, equip_type, data.equip_type)
 		table_view.set_cell_value(row_idx, color, data.color)
 
+
+func random_equip_type() -> int:
+	var flag: int = 0
+
+	if randi() % 2: flag |= EquipType.HEAD
+	if randi() % 2: flag |= EquipType.CHEST
+	if randi() % 2: flag |= EquipType.HANDS
+	if randi() % 2: flag |= EquipType.LEGS
+	if randi() % 2: flag |= EquipType.FEET
+	if randi() % 2: flag |= EquipType.SHIELD
+
+	return flag
 
 func create_item(index: int) -> Dictionary[StringName, Variant]:
 	return {
@@ -69,7 +95,8 @@ func create_item(index: int) -> Dictionary[StringName, Variant]:
 		&\"unique\": bool(index % 2),
 		&\"cost\": randi_range(COST_MIN, COST_MAX),
 		&\"weight\": snappedf(randf_range(WEIGHT_MIN, WEIGHT_MAX), 0.1),
-		&\"direction\": randi_range(0, 3),
+		&\"item_type\": randi_range(0, 7),
+		&\"equip_type\": random_equip_type(),
 		&\"color\": Color(randf(), randf(), randf()),
 	}
 
