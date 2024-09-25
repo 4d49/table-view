@@ -890,6 +890,14 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 	return Callable()
 
 func default_comparator(type: Type, hint: Hint, hint_string: String) -> Callable:
+	match type:
+		Type.STRING, Type.STRING_NAME:
+			return func(a: String, b: String) -> bool:
+				return a < b
+		Type.COLOR:
+			return func(a: Color, b: Color) -> bool:
+				return hash(a) < hash(b)
+
 	return func(a: Variant, b: Variant) -> bool:
 		return a < b
 
