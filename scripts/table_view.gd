@@ -52,6 +52,11 @@ enum ColumnResizeMode {
 #	FIXED,
 #	RESIZE_TO_CONTENTS,
 }
+enum SortMode {
+	NONE,
+	ASCENDING,
+	DESCENDING,
+}
 enum SelectMode {
 	DISABLED,
 	SINGLE_ROW,
@@ -141,6 +146,7 @@ func _init() -> void:
 	_h_scroll.value_changed.connect(_on_scroll_value_changed)
 	self.add_child(_h_scroll)
 
+	self.column_clicked.connect(_on_column_clicked)
 	self.cell_double_clicked.connect(_on_cell_double_click)
 	self.row_clicked.connect(select_single_row)
 
@@ -917,6 +923,7 @@ func add_column(
 		),
 		&"draw_mode": DrawMode.NORMAL,
 		&"comparator": comparator,
+		&"sort_mode": SortMode.NONE,
 	}
 
 	if DEBUG_ENABLED:
@@ -969,6 +976,33 @@ func get_column_hint(column_idx: int) -> Hint:
 
 func get_column_hint_string(column_idx: int) -> String:
 	return _columns[column_idx][&"type_hint"][&"hint_string"]
+
+
+func get_column_sort_mode(column_idx: int) -> SortMode:
+	return _columns[column_idx][&"sort_mode"]
+
+
+func sort_column(column_idx: int, sort_mode: SortMode) -> void:
+	var column: Dictionary = _columns[column_idx]
+	column.sort_mode = sort_mode
+
+	if sort_mode == SortMode.NONE:
+		return
+
+	var comparator: Callable = column.comparator
+	if not comparator.is_valid():
+		return
+
+	if sort_mode == SortMode.ASCENDING:
+		_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return comparator.call(a.cells[column_idx].value, b.cells[column_idx].value)
+		)
+	else:
+		_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return comparator.call(b.cells[column_idx].value, a.cells[column_idx].value)
+		)
+
+	update_table(true)
 
 
 
@@ -1195,6 +1229,12 @@ func _horizontal_scroll(pages: float) -> bool:
 	return _h_scroll.get_value() != prev_value
 
 
+
+func _on_column_clicked(column_idx: int) -> void:
+	if get_column_sort_mode(column_idx) == SortMode.ASCENDING:
+		sort_column(column_idx, SortMode.DESCENDING)
+	else:
+		sort_column(column_idx, SortMode.ASCENDING)
 
 
 func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
