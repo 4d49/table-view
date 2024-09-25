@@ -33,7 +33,7 @@ const WEIGHT_MIN = 0.0
 const WEIGHT_MAX = 99.99
 
 
-@onready var table_view: TableView = $TableView
+@onready var table_view: TableView = $VBoxContainer/TableView
 @export_range(0, 10_000) var data_size: int = 10_000
 
 
@@ -190,6 +190,13 @@ func get_some_data() -> Array[Dictionary]:
 	return data
 
 
+func _on_filter_line_text_changed(text: String) -> void:
+	const COLUMN_NAME = 1
+
+	var callable: Callable = text.is_subsequence_ofn
+	table_view.filter_rows_by_callable(COLUMN_NAME, callable)
+
+
 func _on_column_clicked(column_idx: int) -> void:
 	print(\"Column clicked: %d\" % column_idx)
 
@@ -228,17 +235,27 @@ grow_horizontal = 2
 grow_vertical = 2
 script = SubResource("script")
 
-[node name="TableView" type="Control" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
+
+[node name="FilterLine" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Filter Rows by Name"
+clear_button_enabled = true
+
+[node name="TableView" type="Control" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
 theme = ExtResource("1_dxj5b")
 script = ExtResource("2_1kret")
 
-[connection signal="cell_clicked" from="TableView" to="." method="_on_cell_clicked"]
-[connection signal="cell_double_clicked" from="TableView" to="." method="_on_cell_double_clicked"]
-[connection signal="cell_rmb_clicked" from="TableView" to="." method="_on_cell_rmb_clicked"]
-[connection signal="column_clicked" from="TableView" to="." method="_on_column_clicked"]
-[connection signal="column_double_clicked" from="TableView" to="." method="_on_column_double_clicked"]
-[connection signal="column_rmb_clicked" from="TableView" to="." method="_on_column_rmb_clicked"]
-[connection signal="row_clicked" from="TableView" to="." method="_on_row_clicked"]
-[connection signal="row_double_clicked" from="TableView" to="." method="_on_row_double_clicked"]
-[connection signal="row_rmb_clicked" from="TableView" to="." method="_on_row_rmb_clicked"]
+[connection signal="text_changed" from="VBoxContainer/FilterLine" to="." method="_on_filter_line_text_changed"]
+[connection signal="cell_clicked" from="VBoxContainer/TableView" to="." method="_on_cell_clicked"]
+[connection signal="cell_double_clicked" from="VBoxContainer/TableView" to="." method="_on_cell_double_clicked"]
+[connection signal="cell_rmb_clicked" from="VBoxContainer/TableView" to="." method="_on_cell_rmb_clicked"]
+[connection signal="column_clicked" from="VBoxContainer/TableView" to="." method="_on_column_clicked"]
+[connection signal="column_double_clicked" from="VBoxContainer/TableView" to="." method="_on_column_double_clicked"]
+[connection signal="column_rmb_clicked" from="VBoxContainer/TableView" to="." method="_on_column_rmb_clicked"]
+[connection signal="row_clicked" from="VBoxContainer/TableView" to="." method="_on_row_clicked"]
+[connection signal="row_double_clicked" from="VBoxContainer/TableView" to="." method="_on_row_double_clicked"]
+[connection signal="row_rmb_clicked" from="VBoxContainer/TableView" to="." method="_on_row_rmb_clicked"]
