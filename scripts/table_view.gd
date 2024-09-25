@@ -1252,7 +1252,11 @@ func find_column_at_position(point: Vector2) -> int:
 
 func find_row_at_position(point: Vector2) -> int:
 	for i: int in _rows.size():
-		if Rect2(_rows[i][&"rect"]).has_point(point):
+		var row: Dictionary = _rows[i]
+		if not row.visible:
+			continue
+
+		if Rect2(row.rect).has_point(point):
 			return i
 
 	return INVALID_ROW
