@@ -1031,7 +1031,7 @@ func get_column_sort_mode(column_idx: int) -> SortMode:
 	return _columns[column_idx][&"sort_mode"]
 
 
-func sort_column(column_idx: int, sort_mode: SortMode) -> void:
+func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 	var column: Dictionary = _columns[column_idx]
 	column.sort_mode = sort_mode
 
@@ -1281,9 +1281,9 @@ func _horizontal_scroll(pages: float) -> bool:
 
 func _on_column_clicked(column_idx: int) -> void:
 	if get_column_sort_mode(column_idx) == SortMode.ASCENDING:
-		sort_column(column_idx, SortMode.DESCENDING)
+		sort_by_column(column_idx, SortMode.DESCENDING)
 	else:
-		sort_column(column_idx, SortMode.ASCENDING)
+		sort_by_column(column_idx, SortMode.ASCENDING)
 
 
 func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
