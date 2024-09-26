@@ -151,7 +151,9 @@ func _init() -> void:
 
 	self.column_clicked.connect(_on_column_clicked)
 	self.cell_double_clicked.connect(_on_cell_double_click)
+
 	self.row_clicked.connect(select_single_row)
+	self.row_rmb_clicked.connect(select_single_row)
 
 @warning_ignore("unsafe_call_argument")
 func _notification(what: int) -> void:
@@ -979,6 +981,18 @@ func add_column(
 
 	return _columns.size() - 1
 
+func remove_column(column_idx: int) -> void:
+	_columns.remove_at(column_idx)
+
+	for row: Dictionary in _rows:
+		row.cells.remove_at(column_idx)
+
+	update_table(true)
+
+
+func get_column_count() -> int:
+	return _columns.size()
+
 
 func set_column_title(column_idx: int, title: String) -> void:
 	if _columns[column_idx][&"title"] == title:
@@ -998,7 +1012,7 @@ func set_column_visible(column_idx: int, visible: bool) -> void:
 		return
 
 	_columns[column_idx][&"visible"] = visible
-	queue_redraw()
+	update_table(true)
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
@@ -1102,6 +1116,18 @@ func add_row() -> int:
 func remove_row(row_idx: int) -> void:
 	_rows.remove_at(row_idx)
 	mark_dirty()
+
+
+func set_row_visible(row_idx: int, visible: bool) -> void:
+	var row: Dictionary = _rows[row_idx]
+	if row.visible == visible:
+		return
+
+	row.visible = visible
+	update_table(true)
+
+func is_row_visible(row_idx: int) -> bool:
+	return _rows[row_idx][&"visible"]
 
 
 func select_single_row(row_idx: int) -> void:

@@ -26,6 +26,12 @@ enum EquipType {
 	SHIELD = 1<<5,
 }
 
+enum RowMenu {
+	HIDE,
+	REMOVE,
+	MAX,
+}
+
 const COST_MIN = 0
 const COST_MAX = 9999
 
@@ -35,6 +41,10 @@ const WEIGHT_MAX = 99.99
 
 @onready var table_view: TableView = $VBoxContainer/TableView
 @export_range(0, 10_000) var data_size: int = 10_000
+
+
+var column_menu: PopupMenu = null
+var row_menu: PopupMenu = null
 
 
 func _ready() -> void:
@@ -204,7 +214,35 @@ func _on_column_double_clicked(column_idx: int) -> void:
 	print(\"Column double clicked: %d\" % column_idx)
 
 func _on_column_rmb_clicked(column_idx: int) -> void:
-	print(\"Column RMB clicked: %d\" % column_idx)
+	const REMOVE = 1 << 8
+
+	if is_instance_valid(column_menu):
+		column_menu.queue_free()
+
+	column_menu = PopupMenu.new()
+
+	for i: int in table_view.get_column_count():
+		column_menu.add_check_item(table_view.get_column_title(i))
+		column_menu.set_item_checked(-1, table_view.is_column_visible(i))
+
+	column_menu.add_separator()
+	column_menu.add_item(\"Remove\", REMOVE)
+
+	column_menu.focus_exited.connect(column_menu.queue_free)
+	column_menu.id_pressed.connect(func(id: int) -> void:
+		if id == REMOVE:
+			return table_view.remove_column(column_idx)
+
+		if column_menu.is_item_checked(id):
+			table_view.set_column_visible(id, false)
+		else:
+			table_view.set_column_visible(id, true)
+
+		column_menu.set_item_checked(id, table_view.is_column_visible(id))
+	)
+
+	self.add_child(column_menu)
+	column_menu.popup(Rect2i(get_local_mouse_position(), Vector2i.ZERO))
 
 
 func _on_row_clicked(row_idx: int) -> void:
@@ -214,7 +252,24 @@ func _on_row_double_clicked(row_idx: int) -> void:
 	print(\"Row double clicked: %d\" % row_idx)
 
 func _on_row_rmb_clicked(row_idx: int) -> void:
-	print(\"Row RMB clicked: %d\" % row_idx)
+	if is_instance_valid(row_menu):
+		row_menu.queue_free()
+
+	row_menu = PopupMenu.new()
+	row_menu.add_item(\"Hide\", RowMenu.HIDE)
+	row_menu.add_item(\"Remove\", RowMenu.REMOVE)
+
+	row_menu.focus_exited.connect(row_menu.queue_free)
+	row_menu.id_pressed.connect(func(id: int) -> void:
+		match id:
+			RowMenu.HIDE:
+				table_view.set_row_visible(row_idx, false)
+			RowMenu.REMOVE:
+				table_view.remove_row(row_idx)
+	)
+
+	self.add_child(row_menu)
+	row_menu.popup(Rect2i(get_local_mouse_position(), Vector2i.ZERO))
 
 
 func _on_cell_clicked(row_idx: int, column_idx: int) -> void:
