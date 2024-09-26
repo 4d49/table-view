@@ -43,6 +43,7 @@ const WEIGHT_MAX = 99.99
 @export_range(0, 10_000) var data_size: int = 10_000
 
 
+var column_menu: PopupMenu = null
 var row_menu: PopupMenu = null
 
 
@@ -213,7 +214,35 @@ func _on_column_double_clicked(column_idx: int) -> void:
 	print(\"Column double clicked: %d\" % column_idx)
 
 func _on_column_rmb_clicked(column_idx: int) -> void:
-	print(\"Column RMB clicked: %d\" % column_idx)
+	const REMOVE = 1 << 8
+
+	if is_instance_valid(column_menu):
+		column_menu.queue_free()
+
+	column_menu = PopupMenu.new()
+
+	for i: int in table_view.get_column_count():
+		column_menu.add_check_item(table_view.get_column_title(i))
+		column_menu.set_item_checked(-1, table_view.is_column_visible(i))
+
+	column_menu.add_separator()
+	column_menu.add_item(\"Remove\", REMOVE)
+
+	column_menu.focus_exited.connect(column_menu.queue_free)
+	column_menu.id_pressed.connect(func(id: int) -> void:
+		if id == REMOVE:
+			return table_view.remove_column(column_idx)
+
+		if column_menu.is_item_checked(id):
+			table_view.set_column_visible(id, false)
+		else:
+			table_view.set_column_visible(id, true)
+
+		column_menu.set_item_checked(id, table_view.is_column_visible(id))
+	)
+
+	self.add_child(column_menu)
+	column_menu.popup(Rect2i(get_local_mouse_position(), Vector2i.ZERO))
 
 
 func _on_row_clicked(row_idx: int) -> void:
