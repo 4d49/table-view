@@ -357,6 +357,9 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.is_pressed():
 		const SCROLL_FACTOR = 0.25
 
+		if is_instance_valid(_cell_editor):
+			_cell_editor.queue_free()
+
 		match event.get_button_index():
 			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT:
 				if is_select_mode_disabled():
