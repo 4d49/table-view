@@ -230,6 +230,7 @@ func _on_row_rmb_clicked(row_idx: int) -> void:
 	row_menu.add_item(\"Hide\", RowMenu.HIDE)
 	row_menu.add_item(\"Remove\", RowMenu.REMOVE)
 
+	row_menu.focus_exited.connect(row_menu.queue_free)
 	row_menu.id_pressed.connect(func(id: int) -> void:
 		match id:
 			RowMenu.HIDE:
