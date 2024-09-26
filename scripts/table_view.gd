@@ -17,6 +17,8 @@ signal cell_clicked(row_idx: int, column_idx: int)
 signal cell_rmb_clicked(row_idx: int, column_idx: int)
 signal cell_double_clicked(row_idx: int, column_idx: int)
 
+signal column_created(column_idx: int, type: Type, hint: Hint, hint_string: String)
+
 signal row_created(row_idx: int)
 signal row_removed(row_idx: int)
 
@@ -983,6 +985,8 @@ func add_column(
 		column[&"color"] = Color(randf(), randf(), randf())
 
 	_columns.push_back(column)
+	column_created.emit(_columns.size() - 1, type, hint, hint_string)
+
 	update_table(true)
 
 	return _columns.size() - 1
