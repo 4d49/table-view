@@ -1137,6 +1137,20 @@ func remove_row(row_idx: int) -> void:
 	update_table(true)
 
 
+func set_row_count(new_size: int) -> void:
+	var old_size: int = _rows.size()
+	if old_size == new_size:
+		return
+
+	_rows.resize(new_size)
+	if new_size > old_size:
+		while old_size < new_size:
+			_rows[old_size] = create_row(_columns)
+			old_size += 1
+
+	update_table(true)
+
+
 func set_row_visible(row_idx: int, visible: bool) -> void:
 	var row: Dictionary = _rows[row_idx]
 	if row.visible == visible:
