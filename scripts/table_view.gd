@@ -1245,7 +1245,8 @@ func filter_rows_by_callable(column_idx: int, callable: Callable) -> void:
 
 func find_column_at_position(point: Vector2) -> int:
 	for i: int in _columns.size():
-		if Rect2(_columns[i][&"rect"]).has_point(point):
+		var column: Dictionary = _columns[i]
+		if column.visible and Rect2(column.rect).has_point(point):
 			return i
 
 	return INVALID_COLUMN
@@ -1263,8 +1264,9 @@ func find_row_at_position(point: Vector2) -> int:
 
 func find_cell_at_position(row_idx: int, point: Vector2) -> int:
 	var cells: Array[Dictionary] = _rows[row_idx][&"cells"]
-	for i: int in cells.size():
-		if Rect2(cells[i][&"rect"]).has_point(point):
+
+	for i: int in _columns.size():
+		if _columns[i][&"visible"] and Rect2(cells[i][&"rect"]).has_point(point):
 			return i
 
 	return INVALID_CELL
