@@ -1111,6 +1111,11 @@ func set_row_visible(row_idx: int, visible: bool) -> void:
 
 	row.visible = visible
 	update_table(true)
+
+func is_row_visible(row_idx: int) -> bool:
+	return _rows[row_idx][&"visible"]
+
+
 func select_single_row(row_idx: int) -> void:
 	for i: int in _rows.size():
 		_rows[i][&"selected"] = i == row_idx
