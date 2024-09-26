@@ -17,6 +17,8 @@ signal cell_clicked(row_idx: int, column_idx: int)
 signal cell_rmb_clicked(row_idx: int, column_idx: int)
 signal cell_double_clicked(row_idx: int, column_idx: int)
 
+signal row_created(row_idx: int)
+
 signal row_selected(row_idx: int)
 
 
@@ -1113,6 +1115,7 @@ func add_row() -> int:
 		row[&"color"] = Color(randf(), randf(), randf())
 
 	_rows.push_back(row)
+	row_created.emit(_rows.size() - 1)
 
 	return _rows.size() - 1
 
