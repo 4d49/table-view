@@ -1264,8 +1264,9 @@ func find_row_at_position(point: Vector2) -> int:
 
 func find_cell_at_position(row_idx: int, point: Vector2) -> int:
 	var cells: Array[Dictionary] = _rows[row_idx][&"cells"]
-	for i: int in cells.size():
-		if Rect2(cells[i][&"rect"]).has_point(point):
+
+	for i: int in _columns.size():
+		if _columns[i][&"visible"] and Rect2(cells[i][&"rect"]).has_point(point):
 			return i
 
 	return INVALID_CELL
