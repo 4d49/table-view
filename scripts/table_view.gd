@@ -280,7 +280,8 @@ func _notification(what: int) -> void:
 							var texture: Texture2D = _checked if cell.value else _unchecked
 							texture.draw(_canvas, get_text_position(inner_margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
-							RenderingServer.canvas_item_add_rect(_canvas, inner_margin_rect(rect), cell.value)
+							var color: Color = Color.BLACK if cell.value == null else cell.value
+							RenderingServer.canvas_item_add_rect(_canvas, inner_margin_rect(rect), color)
 						_:
 							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
 
@@ -598,7 +599,12 @@ func update_table(force: bool = false) -> void:
 
 					var text_line: TextLine = cell.text_line
 					text_line.clear()
-					text_line.add_string(stringifier.call(cell.value), _font, _font_size)
+
+					if cell.value == null:
+						text_line.add_string("<null>", _font, _font_size)
+					else:
+						text_line.add_string(stringifier.call(cell.value), _font, _font_size)
+
 					text_line.set_width(cell_width)
 
 					cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
@@ -1090,13 +1096,11 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 
 
 
-
-func add_row() -> int:
+static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Variant]:
 	var cells: Array[Dictionary] = []
-	if cells.resize(_columns.size()):
-		return INVALID_ROW
+	cells.resize(columns.size())
 
-	for i: int in _columns.size():
+	for i: int in cells.size():
 		var text_line := TextLine.new()
 		text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
 
@@ -1104,7 +1108,7 @@ func add_row() -> int:
 			&"rect": Rect2i(),
 			&"value": null,
 			&"text_line": text_line,
-			&"type_hint": _columns[i][&"type_hint"],
+			&"type_hint": columns[i][&"type_hint"],
 		}
 
 		if DEBUG_ENABLED:
@@ -1123,7 +1127,11 @@ func add_row() -> int:
 	if DEBUG_ENABLED:
 		row[&"color"] = Color(randf(), randf(), randf())
 
-	_rows.push_back(row)
+	return row
+
+
+func add_row() -> int:
+	_rows.push_back(create_row(_columns))
 	row_created.emit(_rows.size() - 1)
 
 	return _rows.size() - 1
@@ -1133,6 +1141,23 @@ func remove_row(row_idx: int) -> void:
 	row_removed.emit(row_idx)
 
 	update_table(true)
+
+
+func set_row_count(new_size: int) -> void:
+	var old_size: int = _rows.size()
+	if old_size == new_size:
+		return
+
+	_rows.resize(new_size)
+	if new_size > old_size:
+		while old_size < new_size:
+			_rows[old_size] = create_row(_columns)
+			old_size += 1
+
+	update_table(true)
+
+func get_row_count() -> int:
+	return _rows.size()
 
 
 func set_row_visible(row_idx: int, visible: bool) -> void:
@@ -1271,6 +1296,9 @@ func get_cell_edit_handler(row_idx: int, column_idx: int) -> Callable:
 
 func stringify_cell(row_idx: int, column_idx: int) -> String:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
+
+	if cell.value == null:
+		return "<null>"
 
 	var stringifier: Callable = cell.type_hint.stringifier
 	if stringifier.is_valid():
