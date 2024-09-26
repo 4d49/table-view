@@ -981,6 +981,14 @@ func add_column(
 
 	return _columns.size() - 1
 
+func remove_column(column_idx: int) -> void:
+	_columns.remove_at(column_idx)
+
+	for row: Dictionary in _rows:
+		row.cells.remove_at(column_idx)
+
+	update_table(true)
+
 
 func get_column_count() -> int:
 	return _columns.size()
