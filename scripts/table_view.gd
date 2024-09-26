@@ -18,6 +18,7 @@ signal cell_rmb_clicked(row_idx: int, column_idx: int)
 signal cell_double_clicked(row_idx: int, column_idx: int)
 
 signal row_created(row_idx: int)
+signal row_removed(row_idx: int)
 
 signal row_selected(row_idx: int)
 
@@ -1121,6 +1122,8 @@ func add_row() -> int:
 
 func remove_row(row_idx: int) -> void:
 	_rows.remove_at(row_idx)
+	row_removed.emit(row_idx)
+
 	mark_dirty()
 
 
