@@ -357,11 +357,11 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.is_pressed():
 		const SCROLL_FACTOR = 0.25
 
-		if is_instance_valid(_cell_editor):
-			_cell_editor.queue_free()
-
 		match event.get_button_index():
 			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT:
+				if is_instance_valid(_cell_editor):
+					_cell_editor.queue_free()
+
 				if is_select_mode_disabled():
 					return
 				elif header_has_point(event.get_position()):
@@ -865,6 +865,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_empty)
 
 				self.add_child(spin_box)
+				line_edit.grab_focus()
 
 				var rect := scrolled_rect(cell.rect)
 				spin_box.set_position(rect.position)
@@ -893,6 +894,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 					line_edit.text_changed.connect(setter)
 
 				self.add_child(line_edit)
+				line_edit.grab_focus()
 
 				var rect := scrolled_rect(cell.rect)
 				line_edit.set_position(rect.position)
