@@ -1274,6 +1274,17 @@ func find_cell_at_position(row_idx: int, point: Vector2) -> int:
 
 
 
+func clear() -> void:
+	_columns.clear()
+	_rows.clear()
+
+	if is_instance_valid(_cell_editor):
+		_cell_editor.queue_free()
+
+	queue_redraw()
+
+
+
 
 func scrolled_position(point: Vector2) -> Vector2:
 	return Vector2(_h_scroll.get_value(), _v_scroll.get_value()) + point
