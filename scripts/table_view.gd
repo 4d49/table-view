@@ -25,6 +25,8 @@ signal row_removed(row_idx: int)
 
 signal row_selected(row_idx: int)
 
+signal cell_value_changed(row_idx: int, column_idx: int, value: Variant)
+
 
 const NUMBERS_AFTER_DOT = 3
 
@@ -1223,6 +1225,7 @@ func set_cell_value_no_update(row_idx: int, column_idx: int, value: Variant) -> 
 
 func set_cell_value(row_idx: int, column_idx: int, value: Variant) -> void:
 	if set_cell_value_no_update(row_idx, column_idx, value):
+		cell_value_changed.emit(row_idx, column_idx, value)
 		mark_dirty()
 
 func get_cell_value(row_idx: int, column_idx: int) -> Variant:
