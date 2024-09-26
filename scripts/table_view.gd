@@ -1090,13 +1090,11 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 
 
 
-
-func add_row() -> int:
+static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Variant]:
 	var cells: Array[Dictionary] = []
-	if cells.resize(_columns.size()):
-		return INVALID_ROW
+	cells.resize(columns.size())
 
-	for i: int in _columns.size():
+	for i: int in cells.size():
 		var text_line := TextLine.new()
 		text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
 
@@ -1104,7 +1102,7 @@ func add_row() -> int:
 			&"rect": Rect2i(),
 			&"value": null,
 			&"text_line": text_line,
-			&"type_hint": _columns[i][&"type_hint"],
+			&"type_hint": columns[i][&"type_hint"],
 		}
 
 		if DEBUG_ENABLED:
@@ -1123,7 +1121,11 @@ func add_row() -> int:
 	if DEBUG_ENABLED:
 		row[&"color"] = Color(randf(), randf(), randf())
 
-	_rows.push_back(row)
+	return row
+
+
+func add_row() -> int:
+	_rows.push_back(create_row(_columns))
 	row_created.emit(_rows.size() - 1)
 
 	return _rows.size() - 1
