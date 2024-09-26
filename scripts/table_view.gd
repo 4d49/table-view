@@ -1208,10 +1208,9 @@ func set_row_count(new_size: int) -> void:
 		return
 
 	_rows.resize(new_size)
-	if new_size > old_size:
-		while old_size < new_size:
-			_rows[old_size] = create_row(_columns)
-			old_size += 1
+	while old_size < new_size:
+		_rows[old_size] = create_row(_columns)
+		old_size += 1
 
 	update_table(true)
 
