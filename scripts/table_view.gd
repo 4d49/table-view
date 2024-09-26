@@ -18,6 +18,7 @@ signal cell_rmb_clicked(row_idx: int, column_idx: int)
 signal cell_double_clicked(row_idx: int, column_idx: int)
 
 signal column_created(column_idx: int, type: Type, hint: Hint, hint_string: String)
+signal column_removed(column_idx: int)
 
 signal row_created(row_idx: int)
 signal row_removed(row_idx: int)
@@ -997,6 +998,7 @@ func remove_column(column_idx: int) -> void:
 	for row: Dictionary in _rows:
 		row.cells.remove_at(column_idx)
 
+	column_removed.emit(column_idx)
 	update_table(true)
 
 
