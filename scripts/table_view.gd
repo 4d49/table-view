@@ -17,7 +17,15 @@ signal cell_clicked(row_idx: int, column_idx: int)
 signal cell_rmb_clicked(row_idx: int, column_idx: int)
 signal cell_double_clicked(row_idx: int, column_idx: int)
 
+signal column_created(column_idx: int, type: Type, hint: Hint, hint_string: String)
+signal column_removed(column_idx: int)
+
+signal row_created(row_idx: int)
+signal row_removed(row_idx: int)
+
 signal row_selected(row_idx: int)
+
+signal cell_value_changed(row_idx: int, column_idx: int, value: Variant)
 
 
 const NUMBERS_AFTER_DOT = 3
@@ -980,6 +988,8 @@ func add_column(
 		column[&"color"] = Color(randf(), randf(), randf())
 
 	_columns.push_back(column)
+	column_created.emit(_columns.size() - 1, type, hint, hint_string)
+
 	update_table(true)
 
 	return _columns.size() - 1
@@ -990,6 +1000,7 @@ func remove_column(column_idx: int) -> void:
 	for row: Dictionary in _rows:
 		row.cells.remove_at(column_idx)
 
+	column_removed.emit(column_idx)
 	update_table(true)
 
 
@@ -1113,12 +1124,15 @@ func add_row() -> int:
 		row[&"color"] = Color(randf(), randf(), randf())
 
 	_rows.push_back(row)
+	row_created.emit(_rows.size() - 1)
 
 	return _rows.size() - 1
 
 func remove_row(row_idx: int) -> void:
 	_rows.remove_at(row_idx)
-	mark_dirty()
+	row_removed.emit(row_idx)
+
+	update_table(true)
 
 
 func set_row_visible(row_idx: int, visible: bool) -> void:
@@ -1199,17 +1213,24 @@ func deselect_all_rows() -> void:
 
 
 
-
 func set_cell_value_no_update(row_idx: int, column_idx: int, value: Variant) -> bool:
-	if is_same(_rows[row_idx][&"cells"][column_idx][&"value"], value):
+	var row: Dictionary = _rows[row_idx]
+	var cell: Dictionary = row.cells[column_idx]
+
+	if is_same(cell.value, value):
 		return false
 
-	_rows[row_idx][&"dirty"] = true
-	_rows[row_idx][&"cells"][column_idx][&"value"] = value
+	cell.value = value
+	row.dirty = true
 
 	return true
 
 func set_cell_value(row_idx: int, column_idx: int, value: Variant) -> void:
+	if set_cell_value_no_update(row_idx, column_idx, value):
+		cell_value_changed.emit(row_idx, column_idx, value)
+		mark_dirty()
+
+func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> void:
 	if set_cell_value_no_update(row_idx, column_idx, value):
 		mark_dirty()
 
