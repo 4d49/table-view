@@ -151,7 +151,9 @@ func _init() -> void:
 
 	self.column_clicked.connect(_on_column_clicked)
 	self.cell_double_clicked.connect(_on_cell_double_click)
+
 	self.row_clicked.connect(select_single_row)
+	self.row_rmb_clicked.connect(select_single_row)
 
 @warning_ignore("unsafe_call_argument")
 func _notification(what: int) -> void:
