@@ -1278,6 +1278,9 @@ func clear() -> void:
 	_columns.clear()
 	_rows.clear()
 
+	if is_instance_valid(_cell_editor):
+		_cell_editor.queue_free()
+
 	queue_redraw()
 
 
