@@ -598,7 +598,12 @@ func update_table(force: bool = false) -> void:
 
 					var text_line: TextLine = cell.text_line
 					text_line.clear()
-					text_line.add_string(stringifier.call(cell.value), _font, _font_size)
+
+					if cell.value == null:
+						text_line.add_string("<null>", _font, _font_size)
+					else:
+						text_line.add_string(stringifier.call(cell.value), _font, _font_size)
+
 					text_line.set_width(cell_width)
 
 					cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
@@ -1287,6 +1292,9 @@ func get_cell_edit_handler(row_idx: int, column_idx: int) -> Callable:
 
 func stringify_cell(row_idx: int, column_idx: int) -> String:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
+
+	if cell.value == null:
+		return "<null>"
 
 	var stringifier: Callable = cell.type_hint.stringifier
 	if stringifier.is_valid():
