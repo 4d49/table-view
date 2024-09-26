@@ -1035,6 +1035,35 @@ func remove_column(column_idx: int) -> void:
 	update_table(true)
 
 
+func set_column_count(new_size: int) -> void:
+	var old_size: int = _columns.size()
+	if old_size == new_size:
+		return
+
+	_columns.resize(new_size)
+	for row: Dictionary in _rows:
+		row.cells.resize(new_size)
+
+	while old_size < new_size:
+		var column: Dictionary = create_column(
+			"Column %d" % old_size,
+			Type.BOOL,
+			Hint.NONE,
+			"",
+			stringifier_default(Type.BOOL, Hint.NONE, ""),
+			edit_handler_default(Type.BOOL, Hint.NONE, ""),
+			default_comparator(Type.BOOL, Hint.NONE, ""),
+		)
+		_columns[old_size] = column
+
+		var type_hint: Dictionary = column.type_hint
+		for row: Dictionary in _rows:
+			row.cells[old_size] = create_cell(type_hint)
+
+		old_size += 1
+
+	update_table(true)
+
 func get_column_count() -> int:
 	return _columns.size()
 
