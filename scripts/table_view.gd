@@ -982,6 +982,10 @@ func add_column(
 	return _columns.size() - 1
 
 
+func get_column_count() -> int:
+	return _columns.size()
+
+
 func set_column_title(column_idx: int, title: String) -> void:
 	if _columns[column_idx][&"title"] == title:
 		return
