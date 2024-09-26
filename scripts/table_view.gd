@@ -1104,6 +1104,13 @@ func remove_row(row_idx: int) -> void:
 	mark_dirty()
 
 
+func set_row_visible(row_idx: int, visible: bool) -> void:
+	var row: Dictionary = _rows[row_idx]
+	if row.visible == visible:
+		return
+
+	row.visible = visible
+	update_table(true)
 func select_single_row(row_idx: int) -> void:
 	for i: int in _rows.size():
 		_rows[i][&"selected"] = i == row_idx
