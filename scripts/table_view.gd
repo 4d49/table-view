@@ -1004,7 +1004,7 @@ func set_column_visible(column_idx: int, visible: bool) -> void:
 		return
 
 	_columns[column_idx][&"visible"] = visible
-	queue_redraw()
+	update_table(true)
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
