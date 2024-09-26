@@ -280,7 +280,8 @@ func _notification(what: int) -> void:
 							var texture: Texture2D = _checked if cell.value else _unchecked
 							texture.draw(_canvas, get_text_position(inner_margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
-							RenderingServer.canvas_item_add_rect(_canvas, inner_margin_rect(rect), cell.value)
+							var color: Color = Color.BLACK if cell.value == null else cell.value
+							RenderingServer.canvas_item_add_rect(_canvas, inner_margin_rect(rect), color)
 						_:
 							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
 
