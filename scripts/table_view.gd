@@ -1124,7 +1124,7 @@ func remove_row(row_idx: int) -> void:
 	_rows.remove_at(row_idx)
 	row_removed.emit(row_idx)
 
-	mark_dirty()
+	update_table(true)
 
 
 func set_row_visible(row_idx: int, visible: bool) -> void:
