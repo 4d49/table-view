@@ -1156,6 +1156,9 @@ func set_row_count(new_size: int) -> void:
 
 	update_table(true)
 
+func get_row_count() -> int:
+	return _rows.size()
+
 
 func set_row_visible(row_idx: int, visible: bool) -> void:
 	var row: Dictionary = _rows[row_idx]
