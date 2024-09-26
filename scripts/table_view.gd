@@ -1118,25 +1118,30 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 
 
 
+
+static func create_cell(type_hint: Dictionary) -> Dictionary[StringName, Variant]:
+	var text_line := TextLine.new()
+	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
+
+	var cell: Dictionary[StringName, Variant] = {
+		&"rect": Rect2i(),
+		&"value": null,
+		&"text_line": text_line,
+		&"type_hint": type_hint,
+	}
+
+	if DEBUG_ENABLED:
+		cell[&"color"] = Color(randf(), randf(), randf())
+
+	return cell
+
+
 static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Variant]:
 	var cells: Array[Dictionary] = []
 	cells.resize(columns.size())
 
 	for i: int in cells.size():
-		var text_line := TextLine.new()
-		text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
-
-		var cell: Dictionary[StringName, Variant] = {
-			&"rect": Rect2i(),
-			&"value": null,
-			&"text_line": text_line,
-			&"type_hint": columns[i][&"type_hint"],
-		}
-
-		if DEBUG_ENABLED:
-			cell[&"color"] = Color(randf(), randf(), randf())
-
-		cells[i] = cell
+		cells[i] = create_cell(columns[i][&"type_hint"])
 
 	var row: Dictionary[StringName, Variant] = {
 		&"rect": Rect2i(),
