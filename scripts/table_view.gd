@@ -1014,10 +1014,13 @@ func add_column(
 		edit_handler,
 		comparator
 	)
-
 	_columns.push_back(column)
-	column_created.emit(_columns.size() - 1, type, hint, hint_string)
 
+	var type_hint: Dictionary = column.type_hint
+	for row: Dictionary in _rows:
+		row.cells.push_back(create_cell(type_hint))
+
+	column_created.emit(_columns.size() - 1, type, hint, hint_string)
 	update_table(true)
 
 	return _columns.size() - 1
