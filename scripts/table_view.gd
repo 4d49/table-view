@@ -865,6 +865,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_empty)
 
 				self.add_child(spin_box)
+				line_edit.grab_focus()
 
 				var rect := scrolled_rect(cell.rect)
 				spin_box.set_position(rect.position)
@@ -893,6 +894,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 					line_edit.text_changed.connect(setter)
 
 				self.add_child(line_edit)
+				line_edit.grab_focus()
 
 				var rect := scrolled_rect(cell.rect)
 				line_edit.set_position(rect.position)
