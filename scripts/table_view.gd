@@ -1213,13 +1213,15 @@ func deselect_all_rows() -> void:
 
 
 
-
 func set_cell_value_no_update(row_idx: int, column_idx: int, value: Variant) -> bool:
-	if is_same(_rows[row_idx][&"cells"][column_idx][&"value"], value):
+	var row: Dictionary = _rows[row_idx]
+	var cell: Dictionary = row.cells[column_idx]
+
+	if is_same(cell.value, value):
 		return false
 
-	_rows[row_idx][&"dirty"] = true
-	_rows[row_idx][&"cells"][column_idx][&"value"] = value
+	cell.value = value
+	row.dirty = true
 
 	return true
 
