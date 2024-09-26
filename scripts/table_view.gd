@@ -1228,6 +1228,10 @@ func set_cell_value(row_idx: int, column_idx: int, value: Variant) -> void:
 		cell_value_changed.emit(row_idx, column_idx, value)
 		mark_dirty()
 
+func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> void:
+	if set_cell_value_no_update(row_idx, column_idx, value):
+		mark_dirty()
+
 func get_cell_value(row_idx: int, column_idx: int) -> Variant:
 	return _rows[row_idx][&"cells"][column_idx][&"value"]
 
