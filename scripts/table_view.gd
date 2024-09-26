@@ -958,18 +958,17 @@ func default_comparator(type: Type, hint: Hint, hint_string: String) -> Callable
 		return a < b
 
 
-func add_column(
+static func create_column(
 		title: String,
 		type: Type,
-		hint: Hint = Hint.NONE,
-		hint_string: String = "",
-		stringifier: Callable = stringifier_default(type, hint, hint_string),
-		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
-		comparator: Callable = default_comparator(type, hint, hint_string),
-	) -> int:
+		hint: Hint,
+		hint_string: String,
+		stringifier: Callable,
+		edit_handler: Callable,
+		comparator: Callable,
+	) -> Dictionary[StringName, Variant]:
 
 	var text_line := TextLine.new()
-	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
 	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
 
 	var column: Dictionary[StringName, Variant] = {
@@ -992,6 +991,29 @@ func add_column(
 
 	if DEBUG_ENABLED:
 		column[&"color"] = Color(randf(), randf(), randf())
+
+	return column
+
+
+func add_column(
+		title: String,
+		type: Type,
+		hint: Hint = Hint.NONE,
+		hint_string: String = "",
+		stringifier: Callable = stringifier_default(type, hint, hint_string),
+		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
+		comparator: Callable = default_comparator(type, hint, hint_string),
+	) -> int:
+
+	var column: Dictionary[StringName, Variant] = create_column(
+		title,
+		type,
+		hint,
+		hint_string,
+		stringifier,
+		edit_handler,
+		comparator
+	)
 
 	_columns.push_back(column)
 	column_created.emit(_columns.size() - 1, type, hint, hint_string)
