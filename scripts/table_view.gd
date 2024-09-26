@@ -1245,7 +1245,8 @@ func filter_rows_by_callable(column_idx: int, callable: Callable) -> void:
 
 func find_column_at_position(point: Vector2) -> int:
 	for i: int in _columns.size():
-		if Rect2(_columns[i][&"rect"]).has_point(point):
+		var column: Dictionary = _columns[i]
+		if column.visible and Rect2(column.rect).has_point(point):
 			return i
 
 	return INVALID_COLUMN
