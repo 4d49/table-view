@@ -10,20 +10,19 @@ script/source = "# Copyright (c) 2024 Mansur Isaev and contributors - MIT Licens
 extends PanelContainer
 
 
-enum ItemType {
+enum Type {
 	ARMOR,
 	BOOK,
 	KEY,
+	MISC,
 	POTION,
 	WEAPON,
 }
-enum EquipType {
- 	HEAD = 1<<0,
-	CHEST = 1<<1,
-	HANDS = 1<<2,
-	LEGS = 1<<3,
-	FEET = 1<<4,
-	SHIELD = 1<<5,
+enum Flags {
+	EQUIPABLE = 1 << 0,
+	STACKABLE = 1 << 1,
+	CONSUMABLE = 1 << 2,
+	TRADABLE = 1 << 3,
 }
 
 enum RowMenu {
@@ -33,10 +32,10 @@ enum RowMenu {
 }
 
 const COST_MIN = 0
-const COST_MAX = 9999
+const COST_MAX = 10_000
 
 const WEIGHT_MIN = 0.0
-const WEIGHT_MAX = 99.99
+const WEIGHT_MAX = 10.0
 
 
 @onready var table_view: TableView = $VBoxContainer/TableView
@@ -61,9 +60,9 @@ func _ready() -> void:
 	var weight := table_view.add_column(\"Weight\", TableView.Type.FLOAT, TableView.Hint.RANGE, TableView.range_to_hint_string(WEIGHT_MIN, WEIGHT_MAX, 0.1))
 
 	# Create an enum column type.
-	var item_type := table_view.add_column(\"Item Type\", TableView.Type.INT, TableView.Hint.ENUM, TableView.enum_to_hint_string(ItemType))
+	var type := table_view.add_column(\"Type\", TableView.Type.INT, TableView.Hint.ENUM, TableView.enum_to_hint_string(Type))
 	# Create a flags column type.
-	var equip_type := table_view.add_column(\"Equip Type\", TableView.Type.INT, TableView.Hint.FLAGS, TableView.flags_to_hint_string(EquipType))
+	var flags := table_view.add_column(\"Flags\", TableView.Type.INT, TableView.Hint.FLAGS, TableView.flags_to_hint_string(Flags))
 
 	var color := table_view.add_column(\"Color\", TableView.Type.COLOR, TableView.Hint.COLOR_NO_ALPHA)
 
@@ -77,125 +76,37 @@ func _ready() -> void:
 		table_view.set_cell_value(row_idx, unique, data.unique)
 		table_view.set_cell_value(row_idx, cost, data.cost)
 		table_view.set_cell_value(row_idx, weight, data.weight)
-		table_view.set_cell_value(row_idx, item_type, data.item_type)
-		table_view.set_cell_value(row_idx, equip_type, data.equip_type)
+		table_view.set_cell_value(row_idx, type, data.type)
+		table_view.set_cell_value(row_idx, flags, data.flags)
 		table_view.set_cell_value(row_idx, color, data.color)
 
 
-static func item_name(index: int, type: ItemType) -> String:
-	match type:
-		ItemType.ARMOR:
-			return \"Armor %d\" % index
-		ItemType.BOOK:
-			return \"Book %d\" % index
-		ItemType.KEY:
-			return \"Key %d\" % index
-		ItemType.POTION:
-			return \"Potion %d\" % index
-
-	return \"Weapon %d\" % index
-
-static func item_description(index: int, type: ItemType) -> String:
-	match type:
-		ItemType.ARMOR:
-			return \"Armor Description %d\" % index
-		ItemType.BOOK:
-			return \"Book Description %d\" % index
-		ItemType.KEY:
-			return \"Key Description %d\" % index
-		ItemType.POTION:
-			return \"Potion Description %d\" % index
-
-	return \"Weapon Description %d\" % index
-
-static func item_cost(type: ItemType) -> int:
-	var cost: int = 0
-
-	match type:
-		ItemType.ARMOR:
-			cost = randi_range(100, COST_MAX)
-		ItemType.BOOK:
-			cost = randi_range(0, COST_MAX)
-		ItemType.KEY:
-			cost = randi_range(0, 100)
-		ItemType.POTION:
-			cost = randi_range(25, 1000)
-		_:
-			cost = randi_range(100, 5000)
-
-	return snappedi(cost, 25)
-
-static func item_weight(type: ItemType) -> float:
-	var weight: float = 0.0
-
-	match type:
-		ItemType.ARMOR:
-			weight = randf_range(5.0, 35.0)
-		ItemType.BOOK:
-			weight = randf_range(0.25, 2.5)
-		ItemType.KEY:
-			weight = randf_range(0.25, 0.5)
-		ItemType.POTION:
-			weight = 1.0
-		_:
-			weight = randf_range(0.5, 10.0)
-
-	return snappedf(weight, 0.25)
-
-static func item_equip_type(item_type: ItemType) -> int:
+func random_flags() -> int:
 	var flag: int = 0
 
-	if item_type != ItemType.ARMOR:
-		return flag
-
-	if randi() % 2: flag |= EquipType.HEAD
-	if randi() % 2: flag |= EquipType.CHEST
-	if randi() % 2: flag |= EquipType.HANDS
-	if randi() % 2: flag |= EquipType.LEGS
-	if randi() % 2: flag |= EquipType.FEET
-	if randi() % 2: flag |= EquipType.SHIELD
+	if randi() % 2: flag |= Flags.EQUIPABLE
+	if randi() % 2: flag |= Flags.STACKABLE
+	if randi() % 2: flag |= Flags.CONSUMABLE
+	if randi() % 2: flag |= Flags.TRADABLE
 
 	return flag
-
-static func item_color(type: ItemType) -> Color:
-	const WEIGHT = 0.75
-
-	var color := Color(randf(), randf(), randf())
-
-	match type:
-		ItemType.ARMOR, ItemType.WEAPON:
-			color = color.lerp(Color.LIGHT_STEEL_BLUE, WEIGHT)
-		ItemType.BOOK:
-			color = color.lerp(Color.SADDLE_BROWN, WEIGHT)
-		ItemType.KEY:
-			color = color.lerp(Color.GOLD, WEIGHT)
-		ItemType.POTION:
-			color = color.lerp(Color.RED, WEIGHT)
-		_:
-			color = color.lerp(Color.BLUE, WEIGHT)
-
-	return color
-
-
-func create_item(index: int, type: ItemType) -> Dictionary[StringName, Variant]:
-	return {
-		&\"uid\": StringName(\"%05X\" % index),
-		&\"name\": item_name(index, type),
-		&\"description\": item_description(index, type),
-		&\"unique\": bool(randi() % 2),
-		&\"cost\": item_cost(type),
-		&\"weight\": item_weight(type),
-		&\"item_type\": type,
-		&\"equip_type\": item_equip_type(type),
-		&\"color\": item_color(type),
-	}
 
 func get_some_data() -> Array[Dictionary]:
 	var data: Array[Dictionary] = []
 	data.resize(data_size)
 
 	for i: int in data_size:
-		data[i] = create_item(i, randi_range(0, 4))
+		data[i] = {
+			&\"uid\": StringName(\"%05X\" % i),
+			&\"name\": \"Item name %d\" % i,
+			&\"description\": \"Item description %d\" % i,
+			&\"unique\": bool(randi() % 2),
+			&\"cost\": snappedi(randi_range(COST_MIN, COST_MAX), 50),
+			&\"weight\": snappedf(randf_range(WEIGHT_MIN, WEIGHT_MAX), 0.1),
+			&\"type\": randi_range(Type.ARMOR, Type.WEAPON),
+			&\"flags\": random_flags(),
+			&\"color\": Color(randf(), randf(), randf()),
+		}
 
 	return data
 
@@ -232,8 +143,7 @@ func _on_column_rmb_clicked(column_idx: int) -> void:
 	column_menu.id_pressed.connect(func(id: int) -> void:
 		if id == REMOVE:
 			return table_view.remove_column(column_idx)
-
-		if column_menu.is_item_checked(id):
+		elif column_menu.is_item_checked(id):
 			table_view.set_column_visible(id, false)
 		else:
 			table_view.set_column_visible(id, true)
@@ -295,7 +205,7 @@ layout_mode = 2
 
 [node name="FilterLine" type="LineEdit" parent="VBoxContainer"]
 layout_mode = 2
-placeholder_text = "Filter Rows by Name"
+placeholder_text = "Filter rows by name"
 clear_button_enabled = true
 
 [node name="TableView" type="Control" parent="VBoxContainer"]
