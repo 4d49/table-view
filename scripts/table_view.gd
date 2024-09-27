@@ -1021,7 +1021,7 @@ func add_column(
 		row.cells.push_back(create_cell(type_hint))
 
 	column_created.emit(_columns.size() - 1, type, hint, hint_string)
-	update_table(true)
+	mark_dirty()
 
 	return _columns.size() - 1
 
@@ -1032,7 +1032,7 @@ func remove_column(column_idx: int) -> void:
 		row.cells.remove_at(column_idx)
 
 	column_removed.emit(column_idx)
-	update_table(true)
+	mark_dirty()
 
 
 func set_column_count(new_size: int) -> void:
@@ -1062,7 +1062,7 @@ func set_column_count(new_size: int) -> void:
 
 		old_size += 1
 
-	update_table(true)
+	mark_dirty()
 
 func get_column_count() -> int:
 	return _columns.size()
@@ -1075,7 +1075,7 @@ func set_column_title(column_idx: int, title: String) -> void:
 	_columns[column_idx][&"title"] = title
 	_columns[column_idx][&"dirty"] = true
 
-	update_table(true)
+	mark_dirty()
 
 func get_column_title(column_idx: int) -> String:
 	return _columns[column_idx][&"title"]
@@ -1086,7 +1086,7 @@ func set_column_visible(column_idx: int, visible: bool) -> void:
 		return
 
 	_columns[column_idx][&"visible"] = visible
-	update_table(true)
+	mark_dirty()
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
@@ -1156,7 +1156,7 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 			return comparator.call(b.cells[column_idx].value, a.cells[column_idx].value)
 		)
 
-	update_table(true)
+	mark_dirty()
 
 
 
@@ -1209,7 +1209,7 @@ func remove_row(row_idx: int) -> void:
 	_rows.remove_at(row_idx)
 	row_removed.emit(row_idx)
 
-	update_table(true)
+	mark_dirty()
 
 
 func set_row_count(new_size: int) -> void:
@@ -1222,7 +1222,7 @@ func set_row_count(new_size: int) -> void:
 		_rows[old_size] = create_row(_columns)
 		old_size += 1
 
-	update_table(true)
+	mark_dirty()
 
 func get_row_count() -> int:
 	return _rows.size()
@@ -1234,7 +1234,7 @@ func set_row_visible(row_idx: int, visible: bool) -> void:
 		return
 
 	row.visible = visible
-	update_table(true)
+	mark_dirty()
 
 func is_row_visible(row_idx: int) -> bool:
 	return _rows[row_idx][&"visible"]
@@ -1386,7 +1386,7 @@ func filter_rows_by_callable(column_idx: int, callable: Callable) -> void:
 			row.visible = false
 			row.selected = false
 
-	update_table(true)
+	mark_dirty()
 
 
 func find_column_at_position(point: Vector2) -> int:
