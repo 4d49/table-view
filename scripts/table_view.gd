@@ -252,11 +252,10 @@ func _notification(what: int) -> void:
 				var rect := scrolled_rect(row.rect)
 				if drawable_rect.intersects(rect):
 					draw_begun = true
+				elif draw_begun:
+					break
 				else:
-					if draw_begun:
-						break
-					else:
-						continue
+					continue
 
 				if row.selected:
 					_row_selected.draw(_canvas, rect)
@@ -585,19 +584,22 @@ func update_table(force: bool = false) -> void:
 			if not row.visible:
 				continue
 
+			var cells: Array[Dictionary] = row.cells
+			var row_update: bool = force or row.dirty
+
 			var cell_ofs: int = drawable_rect.position.x
 
-			if force or row.dirty:
-				for i: int in _columns.size():
-					if not _columns[i][&"visible"]:
-						continue
+			for i: int in _columns.size():
+				if not _columns[i][&"visible"]:
+					continue
 
-					var cell: Dictionary = row.cells[i]
-					var cell_width: int = _columns[i].rect.size.x
+				var cell: Dictionary = cells[i]
+				var cell_width: int = _columns[i].rect.size.x
 
-					var stringifier: Callable = cell.type_hint.stringifier
+				var stringifier: Callable = cell.type_hint.stringifier
 
-					var text_line: TextLine = cell.text_line
+				var text_line: TextLine = cell.text_line
+				if row_update:
 					text_line.clear()
 
 					if cell.value == null:
@@ -605,10 +607,10 @@ func update_table(force: bool = false) -> void:
 					else:
 						text_line.add_string(stringifier.call(cell.value), _font, _font_size)
 
-					text_line.set_width(cell_width)
+				text_line.set_width(cell_width)
 
-					cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
-					cell_ofs += cell_width
+				cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
+				cell_ofs += cell_width
 
 			row.rect = Rect2i(drawable_rect.position.x, row_ofs, row_width, row_height)
 			content_rect.end = row.rect.end
@@ -617,18 +619,17 @@ func update_table(force: bool = false) -> void:
 
 			row_ofs += row_height
 
-		if force:
-			_h_scroll.set_max(content_rect.size.x)
-			_h_scroll.set_page(drawable_rect.size.x)
-			_h_scroll.set_visible(floorf(content_rect.size.x) > drawable_rect.size.x)
-			_h_scroll.set_size(Vector2(drawable_rect.size.x, 0.0))
-			_h_scroll.set_position(Vector2(0.0, size.y - _h_scroll.get_minimum_size().y))
+		_h_scroll.set_max(content_rect.size.x)
+		_h_scroll.set_page(drawable_rect.size.x)
+		_h_scroll.set_visible(floorf(content_rect.size.x) > drawable_rect.size.x)
+		_h_scroll.set_size(Vector2(drawable_rect.size.x, 0.0))
+		_h_scroll.set_position(Vector2(0.0, size.y - _h_scroll.get_minimum_size().y))
 
-			_v_scroll.set_max(content_rect.size.y)
-			_v_scroll.set_page(drawable_rect.size.y)
-			_v_scroll.set_visible(floorf(content_rect.size.y) > drawable_rect.size.y)
-			_v_scroll.set_size(Vector2(0.0, drawable_rect.size.y))
-			_v_scroll.set_position(Vector2(get_size().x - _v_scroll.get_minimum_size().x, 0.0))
+		_v_scroll.set_max(content_rect.size.y)
+		_v_scroll.set_page(drawable_rect.size.y)
+		_v_scroll.set_visible(floorf(content_rect.size.y) > drawable_rect.size.y)
+		_v_scroll.set_size(Vector2(0.0, drawable_rect.size.y))
+		_v_scroll.set_position(Vector2(get_size().x - _v_scroll.get_minimum_size().x, 0.0))
 
 	_dirty = false
 	queue_redraw()
@@ -1021,7 +1022,7 @@ func add_column(
 		row.cells.push_back(create_cell(type_hint))
 
 	column_created.emit(_columns.size() - 1, type, hint, hint_string)
-	update_table(true)
+	mark_dirty()
 
 	return _columns.size() - 1
 
@@ -1032,7 +1033,7 @@ func remove_column(column_idx: int) -> void:
 		row.cells.remove_at(column_idx)
 
 	column_removed.emit(column_idx)
-	update_table(true)
+	mark_dirty()
 
 
 func set_column_count(new_size: int) -> void:
@@ -1062,7 +1063,7 @@ func set_column_count(new_size: int) -> void:
 
 		old_size += 1
 
-	update_table(true)
+	mark_dirty()
 
 func get_column_count() -> int:
 	return _columns.size()
@@ -1075,7 +1076,7 @@ func set_column_title(column_idx: int, title: String) -> void:
 	_columns[column_idx][&"title"] = title
 	_columns[column_idx][&"dirty"] = true
 
-	update_table(true)
+	mark_dirty()
 
 func get_column_title(column_idx: int) -> String:
 	return _columns[column_idx][&"title"]
@@ -1086,7 +1087,7 @@ func set_column_visible(column_idx: int, visible: bool) -> void:
 		return
 
 	_columns[column_idx][&"visible"] = visible
-	update_table(true)
+	mark_dirty()
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
@@ -1156,7 +1157,7 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 			return comparator.call(b.cells[column_idx].value, a.cells[column_idx].value)
 		)
 
-	update_table(true)
+	mark_dirty()
 
 
 
@@ -1209,7 +1210,7 @@ func remove_row(row_idx: int) -> void:
 	_rows.remove_at(row_idx)
 	row_removed.emit(row_idx)
 
-	update_table(true)
+	mark_dirty()
 
 
 func set_row_count(new_size: int) -> void:
@@ -1222,7 +1223,7 @@ func set_row_count(new_size: int) -> void:
 		_rows[old_size] = create_row(_columns)
 		old_size += 1
 
-	update_table(true)
+	mark_dirty()
 
 func get_row_count() -> int:
 	return _rows.size()
@@ -1234,7 +1235,7 @@ func set_row_visible(row_idx: int, visible: bool) -> void:
 		return
 
 	row.visible = visible
-	update_table(true)
+	mark_dirty()
 
 func is_row_visible(row_idx: int) -> bool:
 	return _rows[row_idx][&"visible"]
@@ -1386,7 +1387,7 @@ func filter_rows_by_callable(column_idx: int, callable: Callable) -> void:
 			row.visible = false
 			row.selected = false
 
-	update_table(true)
+	mark_dirty()
 
 
 func find_column_at_position(point: Vector2) -> int:
@@ -1477,14 +1478,21 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 	if not edit_handler.is_valid():
 		return
 
+	var text_line: TextLine = cell.text_line
+	var stringifier: Callable = cell.type_hint.stringifier
+
 	var setter: Callable = func set_value(value: Variant) -> void:
 		if is_same(cell.value, value):
 			return
 
-		cell.value = value
-		row.dirty = true
+		text_line.clear()
+		if value == null:
+			text_line.add_string("<null>", _font, _font_size)
+		else:
+			text_line.add_string(stringifier.call(value), _font, _font_size)
 
-		mark_dirty()
+		cell.value = value
+		queue_redraw()
 	var getter: Callable = func get_value() -> Variant:
 		return cell.value
 
