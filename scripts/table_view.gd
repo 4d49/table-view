@@ -1477,14 +1477,21 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 	if not edit_handler.is_valid():
 		return
 
+	var text_line: TextLine = cell.text_line
+	var stringifier: Callable = cell.type_hint.stringifier
+
 	var setter: Callable = func set_value(value: Variant) -> void:
 		if is_same(cell.value, value):
 			return
 
-		cell.value = value
-		row.dirty = true
+		text_line.clear()
+		if value == null:
+			text_line.add_string("<null>", _font, _font_size)
+		else:
+			text_line.add_string(stringifier.call(value), _font, _font_size)
 
-		mark_dirty()
+		cell.value = value
+		queue_redraw()
 	var getter: Callable = func get_value() -> Variant:
 		return cell.value
 
