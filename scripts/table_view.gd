@@ -252,11 +252,10 @@ func _notification(what: int) -> void:
 				var rect := scrolled_rect(row.rect)
 				if drawable_rect.intersects(rect):
 					draw_begun = true
+				elif draw_begun:
+					break
 				else:
-					if draw_begun:
-						break
-					else:
-						continue
+					continue
 
 				if row.selected:
 					_row_selected.draw(_canvas, rect)
