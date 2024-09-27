@@ -696,7 +696,7 @@ static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> 
 	return str
 
 
-static func type_hint_create(
+static func create_type_hint(
 		type: Type,
 		hint: Hint,
 		hint_string: String,
@@ -977,7 +977,7 @@ static func create_column(
 		&"dirty": true,
 		&"visible": true,
 		&"text_line": text_line,
-		&"type_hint": type_hint_create(
+		&"type_hint": create_type_hint(
 			type,
 			hint,
 			hint_string,
@@ -1331,7 +1331,7 @@ func set_cell_custom_type(
 		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
 	) -> void:
 
-	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(
+	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = create_type_hint(
 		type,
 		hint,
 		hint_string,
