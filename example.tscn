@@ -295,7 +295,7 @@ layout_mode = 2
 
 [node name="FilterLine" type="LineEdit" parent="VBoxContainer"]
 layout_mode = 2
-placeholder_text = "Filter Rows by Name"
+placeholder_text = "Filter rows by name"
 clear_button_enabled = true
 
 [node name="TableView" type="Control" parent="VBoxContainer"]
