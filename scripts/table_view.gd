@@ -584,19 +584,22 @@ func update_table(force: bool = false) -> void:
 			if not row.visible:
 				continue
 
+			var cells: Array[Dictionary] = row.cells
+			var row_update: bool = force or row.dirty
+
 			var cell_ofs: int = drawable_rect.position.x
 
-			if force or row.dirty:
-				for i: int in _columns.size():
-					if not _columns[i][&"visible"]:
-						continue
+			for i: int in _columns.size():
+				if not _columns[i][&"visible"]:
+					continue
 
-					var cell: Dictionary = row.cells[i]
-					var cell_width: int = _columns[i].rect.size.x
+				var cell: Dictionary = cells[i]
+				var cell_width: int = _columns[i].rect.size.x
 
-					var stringifier: Callable = cell.type_hint.stringifier
+				var stringifier: Callable = cell.type_hint.stringifier
 
-					var text_line: TextLine = cell.text_line
+				var text_line: TextLine = cell.text_line
+				if row_update:
 					text_line.clear()
 
 					if cell.value == null:
@@ -604,10 +607,10 @@ func update_table(force: bool = false) -> void:
 					else:
 						text_line.add_string(stringifier.call(cell.value), _font, _font_size)
 
-					text_line.set_width(cell_width)
+				text_line.set_width(cell_width)
 
-					cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
-					cell_ofs += cell_width
+				cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
+				cell_ofs += cell_width
 
 			row.rect = Rect2i(drawable_rect.position.x, row_ofs, row_width, row_height)
 			content_rect.end = row.rect.end
@@ -616,18 +619,17 @@ func update_table(force: bool = false) -> void:
 
 			row_ofs += row_height
 
-		if force:
-			_h_scroll.set_max(content_rect.size.x)
-			_h_scroll.set_page(drawable_rect.size.x)
-			_h_scroll.set_visible(floorf(content_rect.size.x) > drawable_rect.size.x)
-			_h_scroll.set_size(Vector2(drawable_rect.size.x, 0.0))
-			_h_scroll.set_position(Vector2(0.0, size.y - _h_scroll.get_minimum_size().y))
+		_h_scroll.set_max(content_rect.size.x)
+		_h_scroll.set_page(drawable_rect.size.x)
+		_h_scroll.set_visible(floorf(content_rect.size.x) > drawable_rect.size.x)
+		_h_scroll.set_size(Vector2(drawable_rect.size.x, 0.0))
+		_h_scroll.set_position(Vector2(0.0, size.y - _h_scroll.get_minimum_size().y))
 
-			_v_scroll.set_max(content_rect.size.y)
-			_v_scroll.set_page(drawable_rect.size.y)
-			_v_scroll.set_visible(floorf(content_rect.size.y) > drawable_rect.size.y)
-			_v_scroll.set_size(Vector2(0.0, drawable_rect.size.y))
-			_v_scroll.set_position(Vector2(get_size().x - _v_scroll.get_minimum_size().x, 0.0))
+		_v_scroll.set_max(content_rect.size.y)
+		_v_scroll.set_page(drawable_rect.size.y)
+		_v_scroll.set_visible(floorf(content_rect.size.y) > drawable_rect.size.y)
+		_v_scroll.set_size(Vector2(0.0, drawable_rect.size.y))
+		_v_scroll.set_position(Vector2(get_size().x - _v_scroll.get_minimum_size().x, 0.0))
 
 	_dirty = false
 	queue_redraw()
