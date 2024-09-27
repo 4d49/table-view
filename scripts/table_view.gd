@@ -1092,7 +1092,15 @@ func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
 
 
-func set_column_type(column_idx: int, type: Type, hint: Hint = Hint.NONE, hint_string: String = "") -> void:
+func set_column_type(
+		column_idx: int,
+		type: Type,
+		hint: Hint = Hint.NONE,
+		hint_string: String = "",
+		stringifier: Callable = stringifier_default(type, hint, hint_string),
+		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
+	) -> void:
+
 	var type_hint: Dictionary[StringName, Variant] = _columns[column_idx][&"type_hint"]
 	if type_hint.type == type and type_hint.hint == hint and type_hint.hint_string == hint_string:
 		return
@@ -1100,6 +1108,8 @@ func set_column_type(column_idx: int, type: Type, hint: Hint = Hint.NONE, hint_s
 	type_hint.type = type
 	type_hint.hint = hint
 	type_hint.hint_string = hint_string
+	type_hint.stringifier = stringifier
+	type_hint.edit_handler = edit_handler
 
 func get_column_type(column_idx: int) -> Type:
 	return _columns[column_idx][&"type_hint"][&"type"]
