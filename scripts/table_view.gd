@@ -696,7 +696,7 @@ static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> 
 	return str
 
 
-static func type_hint_create(
+static func create_type_hint(
 		type: Type,
 		hint: Hint,
 		hint_string: String,
@@ -958,18 +958,17 @@ func default_comparator(type: Type, hint: Hint, hint_string: String) -> Callable
 		return a < b
 
 
-func add_column(
+static func create_column(
 		title: String,
 		type: Type,
-		hint: Hint = Hint.NONE,
-		hint_string: String = "",
-		stringifier: Callable = stringifier_default(type, hint, hint_string),
-		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
-		comparator: Callable = default_comparator(type, hint, hint_string),
-	) -> int:
+		hint: Hint,
+		hint_string: String,
+		stringifier: Callable,
+		edit_handler: Callable,
+		comparator: Callable,
+	) -> Dictionary[StringName, Variant]:
 
 	var text_line := TextLine.new()
-	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
 	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
 
 	var column: Dictionary[StringName, Variant] = {
@@ -978,7 +977,7 @@ func add_column(
 		&"dirty": true,
 		&"visible": true,
 		&"text_line": text_line,
-		&"type_hint": type_hint_create(
+		&"type_hint": create_type_hint(
 			type,
 			hint,
 			hint_string,
@@ -993,9 +992,35 @@ func add_column(
 	if DEBUG_ENABLED:
 		column[&"color"] = Color(randf(), randf(), randf())
 
-	_columns.push_back(column)
-	column_created.emit(_columns.size() - 1, type, hint, hint_string)
+	return column
 
+
+func add_column(
+		title: String,
+		type: Type,
+		hint: Hint = Hint.NONE,
+		hint_string: String = "",
+		stringifier: Callable = stringifier_default(type, hint, hint_string),
+		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
+		comparator: Callable = default_comparator(type, hint, hint_string),
+	) -> int:
+
+	var column: Dictionary[StringName, Variant] = create_column(
+		title,
+		type,
+		hint,
+		hint_string,
+		stringifier,
+		edit_handler,
+		comparator
+	)
+	_columns.push_back(column)
+
+	var type_hint: Dictionary = column.type_hint
+	for row: Dictionary in _rows:
+		row.cells.push_back(create_cell(type_hint))
+
+	column_created.emit(_columns.size() - 1, type, hint, hint_string)
 	update_table(true)
 
 	return _columns.size() - 1
@@ -1009,6 +1034,35 @@ func remove_column(column_idx: int) -> void:
 	column_removed.emit(column_idx)
 	update_table(true)
 
+
+func set_column_count(new_size: int) -> void:
+	var old_size: int = _columns.size()
+	if old_size == new_size:
+		return
+
+	_columns.resize(new_size)
+	for row: Dictionary in _rows:
+		row.cells.resize(new_size)
+
+	while old_size < new_size:
+		var column: Dictionary = create_column(
+			"Column %d" % old_size,
+			Type.BOOL,
+			Hint.NONE,
+			"",
+			stringifier_default(Type.BOOL, Hint.NONE, ""),
+			edit_handler_default(Type.BOOL, Hint.NONE, ""),
+			default_comparator(Type.BOOL, Hint.NONE, ""),
+		)
+		_columns[old_size] = column
+
+		var type_hint: Dictionary = column.type_hint
+		for row: Dictionary in _rows:
+			row.cells[old_size] = create_cell(type_hint)
+
+		old_size += 1
+
+	update_table(true)
 
 func get_column_count() -> int:
 	return _columns.size()
@@ -1038,7 +1092,15 @@ func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
 
 
-func set_column_type(column_idx: int, type: Type, hint: Hint = Hint.NONE, hint_string: String = "") -> void:
+func set_column_type(
+		column_idx: int,
+		type: Type,
+		hint: Hint = Hint.NONE,
+		hint_string: String = "",
+		stringifier: Callable = stringifier_default(type, hint, hint_string),
+		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
+	) -> void:
+
 	var type_hint: Dictionary[StringName, Variant] = _columns[column_idx][&"type_hint"]
 	if type_hint.type == type and type_hint.hint == hint and type_hint.hint_string == hint_string:
 		return
@@ -1046,6 +1108,8 @@ func set_column_type(column_idx: int, type: Type, hint: Hint = Hint.NONE, hint_s
 	type_hint.type = type
 	type_hint.hint = hint
 	type_hint.hint_string = hint_string
+	type_hint.stringifier = stringifier
+	type_hint.edit_handler = edit_handler
 
 func get_column_type(column_idx: int) -> Type:
 	return _columns[column_idx][&"type_hint"][&"type"]
@@ -1096,25 +1160,30 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 
 
 
+
+static func create_cell(type_hint: Dictionary) -> Dictionary[StringName, Variant]:
+	var text_line := TextLine.new()
+	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
+
+	var cell: Dictionary[StringName, Variant] = {
+		&"rect": Rect2i(),
+		&"value": null,
+		&"text_line": text_line,
+		&"type_hint": type_hint,
+	}
+
+	if DEBUG_ENABLED:
+		cell[&"color"] = Color(randf(), randf(), randf())
+
+	return cell
+
+
 static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Variant]:
 	var cells: Array[Dictionary] = []
 	cells.resize(columns.size())
 
 	for i: int in cells.size():
-		var text_line := TextLine.new()
-		text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
-
-		var cell: Dictionary[StringName, Variant] = {
-			&"rect": Rect2i(),
-			&"value": null,
-			&"text_line": text_line,
-			&"type_hint": columns[i][&"type_hint"],
-		}
-
-		if DEBUG_ENABLED:
-			cell[&"color"] = Color(randf(), randf(), randf())
-
-		cells[i] = cell
+		cells[i] = create_cell(columns[i][&"type_hint"])
 
 	var row: Dictionary[StringName, Variant] = {
 		&"rect": Rect2i(),
@@ -1149,10 +1218,9 @@ func set_row_count(new_size: int) -> void:
 		return
 
 	_rows.resize(new_size)
-	if new_size > old_size:
-		while old_size < new_size:
-			_rows[old_size] = create_row(_columns)
-			old_size += 1
+	while old_size < new_size:
+		_rows[old_size] = create_row(_columns)
+		old_size += 1
 
 	update_table(true)
 
@@ -1273,7 +1341,7 @@ func set_cell_custom_type(
 		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
 	) -> void:
 
-	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = type_hint_create(
+	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = create_type_hint(
 		type,
 		hint,
 		hint_string,
