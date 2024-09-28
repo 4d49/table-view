@@ -807,14 +807,10 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				popup.focus_exited.connect(popup.queue_free)
 				self.add_child(popup)
 
-				var rect := scrolled_rect(cell.rect)
-				popup.set_position(rect.position)
-				popup.set_size(rect.size)
-
 				popup.set_meta(&"cell", cell)
 				self.set_cell_editor(popup)
 
-				popup.popup(get_screen_transform() * rect)
+				popup.popup(get_screen_transform() * scrolled_rect(cell.rect))
 
 		Type.INT when hint == Hint.FLAGS:
 			var flags := hint_string_to_flags(hint_string)
@@ -847,14 +843,10 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				popup.focus_exited.connect(popup.queue_free)
 				self.add_child(popup)
 
-				var rect := scrolled_rect(cell.rect)
-				popup.set_position(rect.position)
-				popup.set_size(rect.size)
-
 				popup.set_meta(&"cell", cell)
 				self.set_cell_editor(popup)
 
-				popup.popup(get_screen_transform() * rect)
+				popup.popup(get_screen_transform() * scrolled_rect(cell.rect))
 
 		Type.INT, Type.FLOAT:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
@@ -939,14 +931,10 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 
 				self.add_child(panel)
 
-				var rect := scrolled_rect(cell.rect)
-				panel.set_position(rect.position)
-				panel.set_size(rect.size)
-
 				panel.set_meta(&"cell", cell)
 				self.set_cell_editor(panel)
 
-				panel.popup(get_screen_transform() * rect)
+				panel.popup(get_screen_transform() * scrolled_rect(cell.rect))
 
 	return Callable()
 
