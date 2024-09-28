@@ -1129,6 +1129,16 @@ func get_column_comparator(column_idx: int) -> Callable:
 	return _columns[column_idx][&"comparator"]
 
 
+func set_column_meta(column_idx: int, meta: Variant) -> void:
+	if meta == null:
+		_columns[column_idx].erase(&"meta")
+	else:
+		_columns[column_idx][&"meta"] = meta
+
+func get_column_meta(column_idx: int) -> Variant:
+	return _columns[column_idx].get(&"meta")
+
+
 func get_column_sort_mode(column_idx: int) -> SortMode:
 	return _columns[column_idx][&"sort_mode"]
 
