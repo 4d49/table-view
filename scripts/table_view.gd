@@ -976,6 +976,7 @@ static func create_column(
 		&"title": title,
 		&"rect": Rect2i(),
 		&"dirty": true,
+		&"tooltip": "",
 		&"visible": true,
 		&"text_line": text_line,
 		&"type_hint": create_type_hint(
@@ -1080,6 +1081,14 @@ func set_column_title(column_idx: int, title: String) -> void:
 
 func get_column_title(column_idx: int) -> String:
 	return _columns[column_idx][&"title"]
+
+
+func set_column_tooltip(column_idx: int, tooltip: String) -> void:
+	_columns[column_idx][&"tooltip"] = tooltip
+
+func get_column_tooltip(column_idx: int) -> String:
+	return _columns[column_idx][&"tooltip"]
+
 
 
 func set_column_visible(column_idx: int, visible: bool) -> void:
