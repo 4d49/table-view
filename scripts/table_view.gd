@@ -434,7 +434,11 @@ func _get_tooltip(at_position: Vector2) -> String:
 	if header_has_point(at_position):
 		var column_idx := find_column_at_position(scrolled_position_horizontal(at_position))
 		if column_idx != INVALID_COLUMN:
-			return get_column_title(column_idx)
+			var tooltip := get_column_tooltip(column_idx)
+			if tooltip.is_empty():
+				return get_column_title(column_idx)
+
+			return tooltip
 	else:
 		at_position = scrolled_position(at_position)
 
