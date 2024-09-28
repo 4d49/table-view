@@ -1251,6 +1251,16 @@ func is_row_visible(row_idx: int) -> bool:
 	return _rows[row_idx][&"visible"]
 
 
+func set_row_meta(row_idx: int, meta: Variant) -> void:
+	if meta == null:
+		_rows[row_idx].erase(&"meta")
+	else:
+		_rows[row_idx][&"meta"] = meta
+
+func get_row_meta(row_idx: int) -> Variant:
+	return _rows[row_idx].get(&"meta")
+
+
 func select_single_row(row_idx: int) -> void:
 	for i: int in _rows.size():
 		_rows[i][&"selected"] = i == row_idx
