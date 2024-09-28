@@ -1129,6 +1129,16 @@ func get_column_comparator(column_idx: int) -> Callable:
 	return _columns[column_idx][&"comparator"]
 
 
+func set_column_meta(column_idx: int, meta: Variant) -> void:
+	if meta == null:
+		_columns[column_idx].erase(&"meta")
+	else:
+		_columns[column_idx][&"meta"] = meta
+
+func get_column_meta(column_idx: int, default: Variant = null) -> Variant:
+	return _columns[column_idx].get(&"meta", default)
+
+
 func get_column_sort_mode(column_idx: int) -> SortMode:
 	return _columns[column_idx][&"sort_mode"]
 
@@ -1241,6 +1251,16 @@ func is_row_visible(row_idx: int) -> bool:
 	return _rows[row_idx][&"visible"]
 
 
+func set_row_meta(row_idx: int, meta: Variant) -> void:
+	if meta == null:
+		_rows[row_idx].erase(&"meta")
+	else:
+		_rows[row_idx][&"meta"] = meta
+
+func get_row_meta(row_idx: int, default: Variant = null) -> Variant:
+	return _rows[row_idx].get(&"meta", default)
+
+
 func select_single_row(row_idx: int) -> void:
 	for i: int in _rows.size():
 		_rows[i][&"selected"] = i == row_idx
@@ -1330,6 +1350,19 @@ func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> 
 
 func get_cell_value(row_idx: int, column_idx: int) -> Variant:
 	return _rows[row_idx][&"cells"][column_idx][&"value"]
+
+
+func set_cell_meta(row_idx: int, column_idx: int, meta: Variant) -> void:
+	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
+
+	if meta == null:
+		cell.erase(&"meta")
+	else:
+		cell[&"meta"] = meta
+
+func get_cell_meta(row_idx: int, column_idx: int, default: Variant = null) -> Variant:
+	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
+	return cell.get(&"meta", default)
 
 
 func set_cell_custom_type(
