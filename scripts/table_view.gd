@@ -1352,6 +1352,19 @@ func get_cell_value(row_idx: int, column_idx: int) -> Variant:
 	return _rows[row_idx][&"cells"][column_idx][&"value"]
 
 
+func set_cell_meta(row_idx: int, column_idx: int, meta: Variant) -> void:
+	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
+
+	if meta == null:
+		cell.erase(&"meta")
+	else:
+		cell[&"meta"] = meta
+
+func get_cell_meta(row_idx: int, column_idx: int) -> Variant:
+	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
+	return cell.get(&"meta")
+
+
 func set_cell_custom_type(
 		row_idx: int,
 		column_idx: int,
