@@ -1135,8 +1135,8 @@ func set_column_meta(column_idx: int, meta: Variant) -> void:
 	else:
 		_columns[column_idx][&"meta"] = meta
 
-func get_column_meta(column_idx: int) -> Variant:
-	return _columns[column_idx].get(&"meta")
+func get_column_meta(column_idx: int, default: Variant = null) -> Variant:
+	return _columns[column_idx].get(&"meta", default)
 
 
 func get_column_sort_mode(column_idx: int) -> SortMode:
@@ -1257,8 +1257,8 @@ func set_row_meta(row_idx: int, meta: Variant) -> void:
 	else:
 		_rows[row_idx][&"meta"] = meta
 
-func get_row_meta(row_idx: int) -> Variant:
-	return _rows[row_idx].get(&"meta")
+func get_row_meta(row_idx: int, default: Variant = null) -> Variant:
+	return _rows[row_idx].get(&"meta", default)
 
 
 func select_single_row(row_idx: int) -> void:
@@ -1360,9 +1360,9 @@ func set_cell_meta(row_idx: int, column_idx: int, meta: Variant) -> void:
 	else:
 		cell[&"meta"] = meta
 
-func get_cell_meta(row_idx: int, column_idx: int) -> Variant:
+func get_cell_meta(row_idx: int, column_idx: int, default: Variant = null) -> Variant:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
-	return cell.get(&"meta")
+	return cell.get(&"meta", default)
 
 
 func set_cell_custom_type(
