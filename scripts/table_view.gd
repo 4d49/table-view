@@ -650,7 +650,7 @@ func update_cell_editor_position_and_size() -> void:
 		_cell_editor.set_position(rect.position)
 		_cell_editor.set_size(rect.size)
 	elif _cell_editor is Window:
-		_cell_editor.popup(get_transform() * rect)
+		_cell_editor.popup(get_screen_transform() * rect)
 
 
 static func color_to_string_no_alpha(color: Color) -> String:
@@ -814,7 +814,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				popup.set_meta(&"cell", cell)
 				self.set_cell_editor(popup)
 
-				popup.popup()
+				popup.popup(get_screen_transform() * rect)
 
 		Type.INT when hint == Hint.FLAGS:
 			var flags := hint_string_to_flags(hint_string)
@@ -854,7 +854,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				popup.set_meta(&"cell", cell)
 				self.set_cell_editor(popup)
 
-				popup.popup()
+				popup.popup(get_screen_transform() * rect)
 
 		Type.INT, Type.FLOAT:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
@@ -946,7 +946,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				panel.set_meta(&"cell", cell)
 				self.set_cell_editor(panel)
 
-				panel.popup()
+				panel.popup(get_screen_transform() * rect)
 
 	return Callable()
 
