@@ -1130,14 +1130,14 @@ func get_column_comparator(column_idx: int) -> Callable:
 	return _columns[column_idx][&"comparator"]
 
 
-func set_column_meta(column_idx: int, meta: Variant) -> void:
-	if meta == null:
-		_columns[column_idx].erase(&"meta")
+func set_column_metadata(column_idx: int, metadata: Variant) -> void:
+	if metadata == null:
+		_columns[column_idx].erase(&"metadata")
 	else:
-		_columns[column_idx][&"meta"] = meta
+		_columns[column_idx][&"metadata"] = metadata
 
-func get_column_meta(column_idx: int, default: Variant = null) -> Variant:
-	return _columns[column_idx].get(&"meta", default)
+func get_column_metadata(column_idx: int, default: Variant = null) -> Variant:
+	return _columns[column_idx].get(&"metadata", default)
 
 
 func get_column_sort_mode(column_idx: int) -> SortMode:
@@ -1252,14 +1252,14 @@ func is_row_visible(row_idx: int) -> bool:
 	return _rows[row_idx][&"visible"]
 
 
-func set_row_meta(row_idx: int, meta: Variant) -> void:
-	if meta == null:
-		_rows[row_idx].erase(&"meta")
+func set_row_metadata(row_idx: int, metadata: Variant) -> void:
+	if metadata == null:
+		_rows[row_idx].erase(&"metadata")
 	else:
-		_rows[row_idx][&"meta"] = meta
+		_rows[row_idx][&"metadata"] = metadata
 
-func get_row_meta(row_idx: int, default: Variant = null) -> Variant:
-	return _rows[row_idx].get(&"meta", default)
+func get_row_metadata(row_idx: int, default: Variant = null) -> Variant:
+	return _rows[row_idx].get(&"metadata", default)
 
 
 func select_single_row(row_idx: int) -> void:
@@ -1353,17 +1353,17 @@ func get_cell_value(row_idx: int, column_idx: int) -> Variant:
 	return _rows[row_idx][&"cells"][column_idx][&"value"]
 
 
-func set_cell_meta(row_idx: int, column_idx: int, meta: Variant) -> void:
+func set_cell_metadata(row_idx: int, column_idx: int, metadata: Variant) -> void:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
 
-	if meta == null:
-		cell.erase(&"meta")
+	if metadata == null:
+		cell.erase(&"metadata")
 	else:
-		cell[&"meta"] = meta
+		cell[&"metadata"] = metadata
 
-func get_cell_meta(row_idx: int, column_idx: int, default: Variant = null) -> Variant:
+func get_cell_metadata(row_idx: int, column_idx: int, default: Variant = null) -> Variant:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
-	return cell.get(&"meta", default)
+	return cell.get(&"metadata", default)
 
 
 func set_cell_custom_type(
