@@ -84,6 +84,9 @@ const INVALID_CELL: int = -1
 @export var select_mode: SelectMode = SelectMode.SINGLE_ROW:
 	set = set_select_mode,
 	get = get_select_mode
+@export var editable: bool = true:
+	set = set_editable,
+	get = is_editable
 
 
 var _dirty: bool = true
@@ -484,6 +487,15 @@ func is_select_mode_single_row() -> bool:
 func is_select_mode_multi_row() -> bool:
 	return select_mode == SelectMode.MULTI_ROW
 
+
+func set_editable(value: bool) -> void:
+	if value == false and is_instance_valid(_cell_editor):
+		_cell_editor.queue_free()
+
+	editable = value
+
+func is_editable() -> bool:
+	return editable
 
 
 func header_has_point(point: Vector2) -> bool:
@@ -1505,6 +1517,9 @@ func _on_column_clicked(column_idx: int) -> void:
 
 
 func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
+	if not is_editable():
+		return
+
 	var row: Dictionary = _rows[row_idx]
 	var cell: Dictionary = row[&"cells"][column_idx]
 
