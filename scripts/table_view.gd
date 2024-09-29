@@ -955,9 +955,26 @@ func default_comparator(type: Type, hint: Hint, hint_string: String) -> Callable
 		Type.STRING, Type.STRING_NAME:
 			return func(a: String, b: String) -> bool:
 				return a < b
+
+		Type.COLOR when hint == Hint.COLOR_NO_ALPHA:
+			return func(a: Color, b: Color) -> bool:
+				if a.r != b.r:
+					return a.r < b.r
+				elif a.g != b.g:
+					return a.g < b.g
+				else:
+					return a.b < b.b
+
 		Type.COLOR:
 			return func(a: Color, b: Color) -> bool:
-				return hash(a) < hash(b)
+				if a.r != b.r:
+					return a.r < b.r
+				elif a.g != b.g:
+					return a.g < b.g
+				elif a.b != b.b:
+					return a.b < b.b
+				else:
+					return a.a < b.a
 
 	return func(a: Variant, b: Variant) -> bool:
 		return a < b
