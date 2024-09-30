@@ -1558,6 +1558,8 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 			text_line.add_string(stringifier.call(value), _font, _font_size)
 
 		cell.value = value
+		cell_value_changed.emit(row_idx, column_idx, value)
+
 		queue_redraw()
 	var getter: Callable = func get_value() -> Variant:
 		return cell.value
