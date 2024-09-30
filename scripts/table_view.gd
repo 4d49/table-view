@@ -661,8 +661,6 @@ func update_cell_editor_position_and_size() -> void:
 	if _cell_editor is Control:
 		_cell_editor.set_position(rect.position)
 		_cell_editor.set_size(rect.size)
-	elif _cell_editor is Window:
-		_cell_editor.popup(get_screen_transform() * rect)
 
 
 static func color_to_string_no_alpha(color: Color) -> String:
