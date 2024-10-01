@@ -566,7 +566,7 @@ func update_table(force: bool = false) -> void:
 
 	match column_resize_mode:
 		ColumnResizeMode.STRETCH:
-			var min_size := Vector2i.ZERO
+			var min_size := _column_normal.get_minimum_size()
 
 			var count_visible_columns: int = 0
 			for column: Dictionary in _columns:
@@ -578,6 +578,8 @@ func update_table(force: bool = false) -> void:
 
 			var ofs_x: int = drawable_rect.position.x
 			var ofs_y: int = drawable_rect.position.y
+
+			count_visible_columns = maxi(1, count_visible_columns)
 
 			var rect := Rect2i(ofs_x, ofs_y, maxi(min_size.x + _inner_margin_left + _inner_margin_right, drawable_rect.size.x / count_visible_columns), cell_height)
 			_header = rect
