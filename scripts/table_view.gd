@@ -1118,6 +1118,17 @@ func get_column_tooltip(column_idx: int) -> String:
 	return _columns[column_idx][&"tooltip"]
 
 
+## Returns [param true] if the column can be hidden.
+func can_hide_column(column_idx: int) -> bool:
+	if _columns.size() <= 1:
+		return false
+
+	var visible_columns: int = 0
+	for i: int in _columns.size():
+		if i != column_idx and _columns[i][&"visible"]:
+			visible_columns += 1
+
+	return visible_columns > 0
 
 func set_column_visible(column_idx: int, visible: bool) -> void:
 	if _columns[column_idx][&"visible"] == visible:
