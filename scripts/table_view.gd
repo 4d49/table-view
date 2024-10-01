@@ -1047,7 +1047,6 @@ func add_column(
 		row.cells.push_back(create_cell(type_hint))
 
 	column_created.emit(_columns.size() - 1, type, hint, hint_string)
-	update_column_context_menu()
 	mark_dirty()
 
 	return _columns.size() - 1
@@ -1059,7 +1058,6 @@ func remove_column(column_idx: int) -> void:
 		row.cells.remove_at(column_idx)
 
 	column_removed.emit(column_idx)
-	update_column_context_menu()
 	mark_dirty()
 
 
@@ -1090,7 +1088,6 @@ func set_column_count(new_size: int) -> void:
 
 		old_size += 1
 
-	update_column_context_menu()
 	mark_dirty()
 
 func get_column_count() -> int:
@@ -1104,7 +1101,6 @@ func set_column_title(column_idx: int, title: String) -> void:
 	_columns[column_idx][&"title"] = title
 	_columns[column_idx][&"dirty"] = true
 
-	update_column_context_menu()
 	mark_dirty()
 
 func get_column_title(column_idx: int) -> String:
@@ -1139,8 +1135,6 @@ func set_column_visible(column_idx: int, visible: bool) -> bool:
 		return false
 
 	_columns[column_idx][&"visible"] = visible
-	update_column_context_menu()
-
 	return true
 
 func is_column_visible(column_idx: int) -> bool:
@@ -1223,23 +1217,10 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 
 	mark_dirty()
 
-## Updates the column visibility context menu if it was previously created by [method get_or_create_column_context_menu].
-func update_column_context_menu() -> void:
-	if not is_instance_valid(_column_context_menu):
-		return
-
-	_column_context_menu.set_item_count(get_column_count())
-
-	for i: int in get_column_count():
-		_column_context_menu.set_item_text(i, get_column_title(i))
-		_column_context_menu.set_item_as_checkable(i, true)
-		_column_context_menu.set_item_checked(i, is_column_visible(i))
 
 ## Returns an existing [PopupMenu] or creates a new one to control
 ## table column visibility, shown when right-clicking a column.
-## The object is created once and not automatically created with
-## the [TableView]; if it exists, it updates the column list automatically
-## or can be forcibly updated by [method update_column_context_menu].
+## The object is created once and not automatically created with the [TableView].
 func get_or_create_column_context_menu() -> PopupMenu:
 	if not is_instance_valid(_column_context_menu):
 		_column_context_menu = PopupMenu.new()
@@ -1251,8 +1232,6 @@ func get_or_create_column_context_menu() -> PopupMenu:
 
 			mark_dirty()
 		)
-
-		self.update_column_context_menu()
 		self.add_child(_column_context_menu)
 
 	return _column_context_menu
@@ -1592,6 +1571,14 @@ func _on_column_clicked(column_idx: int) -> void:
 func _on_column_rmb_clicked(column_idx: int) -> void:
 	if not is_instance_valid(_column_context_menu):
 		return
+
+	_column_context_menu.set_item_count(get_column_count())
+
+	for i: int in get_column_count():
+		_column_context_menu.set_item_as_checkable(i, true)
+		_column_context_menu.set_item_text(i, get_column_title(i))
+		_column_context_menu.set_item_checked(i, is_column_visible(i))
+		_column_context_menu.set_item_disabled(i, not can_hide_column(i))
 
 	_column_context_menu.popup(Rect2i(get_screen_transform() * get_local_mouse_position(), Vector2i.ZERO))
 
