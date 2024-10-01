@@ -1130,13 +1130,18 @@ func can_hide_column(column_idx: int) -> bool:
 
 	return visible_columns > 0
 
-func set_column_visible(column_idx: int, visible: bool) -> void:
+## Sets column visibility. Returns [param true] if updated successfully; otherwise, [param false].
+func set_column_visible(column_idx: int, visible: bool) -> bool:
 	if _columns[column_idx][&"visible"] == visible:
-		return
+		return false
+
+	if not visible and not can_hide_column(column_idx):
+		return false
 
 	_columns[column_idx][&"visible"] = visible
 	update_column_context_menu()
 
+	return true
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
