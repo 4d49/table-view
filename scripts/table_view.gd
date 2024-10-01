@@ -1069,6 +1069,7 @@ func set_column_count(new_size: int) -> void:
 	_columns.resize(new_size)
 	for column: Dictionary in _columns:
 		column.visible = true
+		column.sort_mode = SortMode.NONE
 
 	for row: Dictionary in _rows:
 		row.cells.resize(new_size)
