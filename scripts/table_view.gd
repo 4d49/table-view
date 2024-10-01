@@ -102,6 +102,7 @@ var _rows: Array[Dictionary] = []
 var _canvas: RID = RID()
 
 var _cell_editor: Node = null
+var _column_context_menu: PopupMenu = null
 
 #region theme cache
 var _inner_margin_left: float = 0
@@ -161,6 +162,8 @@ func _init() -> void:
 	self.add_child(_h_scroll)
 
 	self.column_clicked.connect(_on_column_clicked)
+	self.column_rmb_clicked.connect(_on_column_rmb_clicked)
+
 	self.cell_double_clicked.connect(_on_cell_double_click)
 
 	self.row_clicked.connect(select_single_row)
@@ -563,7 +566,7 @@ func update_table(force: bool = false) -> void:
 
 	match column_resize_mode:
 		ColumnResizeMode.STRETCH:
-			var min_size := Vector2i.ZERO
+			var min_size := _column_normal.get_minimum_size()
 
 			var count_visible_columns: int = 0
 			for column: Dictionary in _columns:
@@ -575,6 +578,8 @@ func update_table(force: bool = false) -> void:
 
 			var ofs_x: int = drawable_rect.position.x
 			var ofs_y: int = drawable_rect.position.y
+
+			count_visible_columns = maxi(1, count_visible_columns)
 
 			var rect := Rect2i(ofs_x, ofs_y, maxi(min_size.x + _inner_margin_left + _inner_margin_right, drawable_rect.size.x / count_visible_columns), cell_height)
 			_header = rect
@@ -1062,6 +1067,9 @@ func set_column_count(new_size: int) -> void:
 		return
 
 	_columns.resize(new_size)
+	for column: Dictionary in _columns:
+		column.visible = true
+
 	for row: Dictionary in _rows:
 		row.cells.resize(new_size)
 
@@ -1109,13 +1117,28 @@ func get_column_tooltip(column_idx: int) -> String:
 	return _columns[column_idx][&"tooltip"]
 
 
+## Returns [param true] if the column can be hidden.
+func can_hide_column(column_idx: int) -> bool:
+	if _columns.size() <= 1:
+		return false
 
-func set_column_visible(column_idx: int, visible: bool) -> void:
+	var visible_columns: int = 0
+	for i: int in _columns.size():
+		if i != column_idx and _columns[i][&"visible"]:
+			visible_columns += 1
+
+	return visible_columns > 0
+
+## Sets column visibility. Returns [param true] if updated successfully; otherwise, [param false].
+func set_column_visible(column_idx: int, visible: bool) -> bool:
 	if _columns[column_idx][&"visible"] == visible:
-		return
+		return false
+
+	if not visible and not can_hide_column(column_idx):
+		return false
 
 	_columns[column_idx][&"visible"] = visible
-	mark_dirty()
+	return true
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
@@ -1196,6 +1219,25 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 		)
 
 	mark_dirty()
+
+
+## Returns an existing [PopupMenu] or creates a new one to control
+## table column visibility, shown when right-clicking a column.
+## The object is created once and not automatically created with the [TableView].
+func get_or_create_column_context_menu() -> PopupMenu:
+	if not is_instance_valid(_column_context_menu):
+		_column_context_menu = PopupMenu.new()
+		_column_context_menu.index_pressed.connect(func on_index_pressed(column_idx: int) -> void:
+			var column: Dictionary = _columns[column_idx]
+
+			column.visible = not column.visible
+			_column_context_menu.set_item_checked(column_idx, column.visible)
+
+			mark_dirty()
+		)
+		self.add_child(_column_context_menu)
+
+	return _column_context_menu
 
 
 
@@ -1523,12 +1565,25 @@ func _horizontal_scroll(pages: float) -> bool:
 	return _h_scroll.get_value() != prev_value
 
 
-
 func _on_column_clicked(column_idx: int) -> void:
 	if get_column_sort_mode(column_idx) == SortMode.ASCENDING:
 		sort_by_column(column_idx, SortMode.DESCENDING)
 	else:
 		sort_by_column(column_idx, SortMode.ASCENDING)
+
+func _on_column_rmb_clicked(column_idx: int) -> void:
+	if not is_instance_valid(_column_context_menu):
+		return
+
+	_column_context_menu.set_item_count(get_column_count())
+
+	for i: int in get_column_count():
+		_column_context_menu.set_item_as_checkable(i, true)
+		_column_context_menu.set_item_text(i, get_column_title(i))
+		_column_context_menu.set_item_checked(i, is_column_visible(i))
+		_column_context_menu.set_item_disabled(i, not can_hide_column(i))
+
+	_column_context_menu.popup(Rect2i(get_screen_transform() * get_local_mouse_position(), Vector2i.ZERO))
 
 
 func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
