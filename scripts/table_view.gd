@@ -19,6 +19,7 @@ signal cell_double_clicked(row_idx: int, column_idx: int)
 
 signal column_created(column_idx: int, type: Type, hint: Hint, hint_string: String)
 signal column_removed(column_idx: int)
+signal column_visibility_changed(column_idx: int, visibility: bool)
 
 signal row_created(row_idx: int)
 signal row_removed(row_idx: int)
@@ -1139,6 +1140,8 @@ func set_column_visible(column_idx: int, visible: bool) -> bool:
 		return false
 
 	_columns[column_idx][&"visible"] = visible
+	column_visibility_changed.emit(column_idx, visible)
+
 	return true
 
 func is_column_visible(column_idx: int) -> bool:
