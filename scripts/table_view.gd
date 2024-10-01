@@ -102,6 +102,7 @@ var _rows: Array[Dictionary] = []
 var _canvas: RID = RID()
 
 var _cell_editor: Node = null
+var _column_context_menu: PopupMenu = null
 
 #region theme cache
 var _inner_margin_left: float = 0
@@ -161,6 +162,8 @@ func _init() -> void:
 	self.add_child(_h_scroll)
 
 	self.column_clicked.connect(_on_column_clicked)
+	self.column_rmb_clicked.connect(_on_column_rmb_clicked)
+
 	self.cell_double_clicked.connect(_on_cell_double_click)
 
 	self.row_clicked.connect(select_single_row)
@@ -1042,6 +1045,7 @@ func add_column(
 		row.cells.push_back(create_cell(type_hint))
 
 	column_created.emit(_columns.size() - 1, type, hint, hint_string)
+	update_column_context_menu()
 	mark_dirty()
 
 	return _columns.size() - 1
@@ -1053,6 +1057,7 @@ func remove_column(column_idx: int) -> void:
 		row.cells.remove_at(column_idx)
 
 	column_removed.emit(column_idx)
+	update_column_context_menu()
 	mark_dirty()
 
 
@@ -1083,6 +1088,7 @@ func set_column_count(new_size: int) -> void:
 
 		old_size += 1
 
+	update_column_context_menu()
 	mark_dirty()
 
 func get_column_count() -> int:
@@ -1096,6 +1102,7 @@ func set_column_title(column_idx: int, title: String) -> void:
 	_columns[column_idx][&"title"] = title
 	_columns[column_idx][&"dirty"] = true
 
+	update_column_context_menu()
 	mark_dirty()
 
 func get_column_title(column_idx: int) -> String:
@@ -1115,7 +1122,8 @@ func set_column_visible(column_idx: int, visible: bool) -> void:
 		return
 
 	_columns[column_idx][&"visible"] = visible
-	mark_dirty()
+	update_column_context_menu()
+
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
@@ -1196,6 +1204,40 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 		)
 
 	mark_dirty()
+
+## Updates the column visibility context menu if created by [method get_or_create_column_context_menu].
+func update_column_context_menu() -> void:
+	if not is_instance_valid(_column_context_menu):
+		return
+
+	_column_context_menu.set_item_count(get_column_count())
+
+	for i: int in get_column_count():
+		_column_context_menu.set_item_text(i, get_column_title(i))
+		_column_context_menu.set_item_as_checkable(i, true)
+		_column_context_menu.set_item_checked(i, is_column_visible(i))
+
+## Returns an existing [PopupMenu] or creates a new one to control
+## table column visibility, shown when right-clicking a column.
+## The object is created once and not automatically created with
+## the [TableView]; if it exists, it updates the column list automatically
+## or can be forcibly refreshed via the [method update_column_context_menu] method.
+func get_or_create_column_context_menu() -> PopupMenu:
+	if not is_instance_valid(_column_context_menu):
+		_column_context_menu = PopupMenu.new()
+		_column_context_menu.index_pressed.connect(func on_index_pressed(column_idx: int) -> void:
+			var column: Dictionary = _columns[column_idx]
+
+			column.visible = not column.visible
+			_column_context_menu.set_item_checked(column_idx, column.visible)
+
+			mark_dirty()
+		)
+
+		self.update_column_context_menu()
+		self.add_child(_column_context_menu)
+
+	return _column_context_menu
 
 
 
@@ -1523,12 +1565,17 @@ func _horizontal_scroll(pages: float) -> bool:
 	return _h_scroll.get_value() != prev_value
 
 
-
 func _on_column_clicked(column_idx: int) -> void:
 	if get_column_sort_mode(column_idx) == SortMode.ASCENDING:
 		sort_by_column(column_idx, SortMode.DESCENDING)
 	else:
 		sort_by_column(column_idx, SortMode.ASCENDING)
+
+func _on_column_rmb_clicked(column_idx: int) -> void:
+	if not is_instance_valid(_column_context_menu):
+		return
+
+	_column_context_menu.popup(Rect2i(get_screen_transform() * get_local_mouse_position(), Vector2i.ZERO))
 
 
 func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
