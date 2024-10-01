@@ -1207,7 +1207,7 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 
 	mark_dirty()
 
-## Updates the column visibility context menu if created by [method get_or_create_column_context_menu].
+## Updates the column visibility context menu if it was previously created by [method get_or_create_column_context_menu].
 func update_column_context_menu() -> void:
 	if not is_instance_valid(_column_context_menu):
 		return
@@ -1223,7 +1223,7 @@ func update_column_context_menu() -> void:
 ## table column visibility, shown when right-clicking a column.
 ## The object is created once and not automatically created with
 ## the [TableView]; if it exists, it updates the column list automatically
-## or can be forcibly refreshed via the [method update_column_context_menu] method.
+## or can be forcibly updated by [method update_column_context_menu].
 func get_or_create_column_context_menu() -> PopupMenu:
 	if not is_instance_valid(_column_context_menu):
 		_column_context_menu = PopupMenu.new()
