@@ -594,9 +594,9 @@ func update_table(force: bool = false) -> void:
 
 				rect.position.x += rect.size.x
 
-	if _rows:
-		var content_rect := drawable_rect
+	var content_rect: Rect2i = _header
 
+	if _rows:
 		var row_ofs: int = drawable_rect.position.y + _header.size.y
 
 		var row_height: int = cell_height
@@ -641,17 +641,19 @@ func update_table(force: bool = false) -> void:
 
 			row_ofs += row_height
 
-		_h_scroll.set_max(content_rect.size.x)
-		_h_scroll.set_page(drawable_rect.size.x)
-		_h_scroll.set_visible(floorf(content_rect.size.x) > drawable_rect.size.x)
-		_h_scroll.set_size(Vector2(drawable_rect.size.x, 0.0))
-		_h_scroll.set_position(Vector2(0.0, size.y - _h_scroll.get_minimum_size().y))
+#region update scroll bars
+	_h_scroll.set_max(content_rect.size.x)
+	_h_scroll.set_page(drawable_rect.size.x)
+	_h_scroll.set_visible(floorf(content_rect.size.x) > drawable_rect.size.x)
+	_h_scroll.set_size(Vector2(drawable_rect.size.x, 0.0))
+	_h_scroll.set_position(Vector2(0.0, size.y - _h_scroll.get_minimum_size().y))
 
-		_v_scroll.set_max(content_rect.size.y)
-		_v_scroll.set_page(drawable_rect.size.y)
-		_v_scroll.set_visible(floorf(content_rect.size.y) > drawable_rect.size.y)
-		_v_scroll.set_size(Vector2(0.0, drawable_rect.size.y))
-		_v_scroll.set_position(Vector2(get_size().x - _v_scroll.get_minimum_size().x, 0.0))
+	_v_scroll.set_max(content_rect.size.y)
+	_v_scroll.set_page(drawable_rect.size.y)
+	_v_scroll.set_visible(floorf(content_rect.size.y) > drawable_rect.size.y)
+	_v_scroll.set_size(Vector2(0.0, drawable_rect.size.y))
+	_v_scroll.set_position(Vector2(get_size().x - _v_scroll.get_minimum_size().x, 0.0))
+#endregion
 
 	_dirty = false
 	queue_redraw()
