@@ -168,7 +168,7 @@ func _init() -> void:
 	self.cell_double_clicked.connect(_on_cell_double_click)
 
 	self.row_clicked.connect(select_single_row)
-	self.row_rmb_clicked.connect(select_single_row)
+	self.row_rmb_clicked.connect(_on_row_rmb_clicked)
 
 @warning_ignore("unsafe_call_argument")
 func _notification(what: int) -> void:
@@ -1590,6 +1590,11 @@ func _on_column_rmb_clicked(column_idx: int) -> void:
 		_column_context_menu.set_item_disabled(i, not can_hide_column(i))
 
 	_column_context_menu.popup(Rect2i(get_screen_transform() * get_local_mouse_position(), Vector2i.ZERO))
+
+
+func _on_row_rmb_clicked(row_idx: int) -> void:
+	if not is_row_selected(row_idx):
+		select_single_row(row_idx)
 
 
 func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
