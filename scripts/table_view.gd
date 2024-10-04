@@ -168,7 +168,6 @@ func _init() -> void:
 
 	self.cell_double_clicked.connect(_on_cell_double_click)
 
-	self.row_clicked.connect(select_single_row)
 	self.row_rmb_clicked.connect(_on_row_rmb_clicked)
 
 @warning_ignore("unsafe_call_argument")
@@ -403,7 +402,7 @@ func _gui_input(event: InputEvent) -> void:
 						elif event.is_double_click():
 							row_double_clicked.emit(row_idx)
 						else:
-							row_clicked.emit(row_idx)
+							select_single_row(row_idx)
 					else:
 						row_rmb_clicked.emit(row_idx)
 
