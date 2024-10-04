@@ -170,6 +170,7 @@ func _init() -> void:
 	self.cell_double_clicked.connect(_on_cell_double_click)
 
 	self.row_rmb_clicked.connect(_on_row_rmb_clicked)
+	self.row_selection_changed.connect(_on_row_selection_changed)
 
 @warning_ignore("unsafe_call_argument")
 func _notification(what: int) -> void:
@@ -1343,12 +1344,6 @@ func select_single_row(row_idx: int) -> void:
 		_rows[i][&"selected"] = i == row_idx
 
 	row_selection_changed.emit()
-
-	if get_select_mode() == SelectMode.SINGLE_ROW:
-		single_row_selected.emit(row_idx)
-	else:
-		multiple_rows_selected.emit([row_idx])
-
 	queue_redraw()
 
 func select_row(row_idx: int) -> void:
@@ -1361,8 +1356,6 @@ func select_row(row_idx: int) -> void:
 			return
 
 	row_selection_changed.emit()
-	multiple_rows_selected.emit(get_selected_rows())
-
 	queue_redraw()
 
 func deselect_row(row_idx: int) -> void:
@@ -1611,6 +1604,19 @@ func _on_column_rmb_clicked(column_idx: int) -> void:
 		_column_context_menu.set_item_disabled(i, not can_hide_column(i))
 
 	_column_context_menu.popup(Rect2i(get_screen_transform() * get_local_mouse_position(), Vector2i.ZERO))
+
+
+func _on_row_selection_changed() -> void:
+	match get_select_mode():
+		SelectMode.SINGLE_ROW:
+			var selected_rows := get_selected_rows()
+			if selected_rows.is_empty():
+				return
+
+			single_row_selected.emit(selected_rows[0])
+
+		SelectMode.MULTI_ROW:
+			multiple_rows_selected.emit(get_selected_rows())
 
 
 func _on_row_rmb_clicked(row_idx: int) -> void:
