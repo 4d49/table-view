@@ -69,6 +69,8 @@ func _ready() -> void:
 	# Some method returning an array with dictionaries.
 	for data: Dictionary in get_some_data():
 		var row_idx := table_view.add_row()
+		table_view.set_row_metadata(row_idx, data)
+
 		# Previously declared variables are used as the column index.
 		table_view.set_cell_value(row_idx, uid, data.uid)
 		table_view.set_cell_value(row_idx, name, data.name)
@@ -111,11 +113,13 @@ func get_some_data() -> Array[Dictionary]:
 	return data
 
 
+
 func _on_filter_line_text_changed(text: String) -> void:
 	const COLUMN_NAME = 1
 
 	var callable: Callable = text.is_subsequence_ofn
 	table_view.filter_rows_by_callable(COLUMN_NAME, callable)
+
 
 
 func _on_column_clicked(column_idx: int) -> void:
@@ -155,8 +159,15 @@ func _on_column_rmb_clicked(column_idx: int) -> void:
 	column_menu.popup(Rect2i(get_local_mouse_position(), Vector2i.ZERO))
 
 
-func _on_row_clicked(row_idx: int) -> void:
-	print(\"Row clicked: %d\" % row_idx)
+
+func _on_single_row_selected(row_idx: int) -> void:
+	var metadata: Dictionary = table_view.get_row_metadata(row_idx)
+	print(\"Row selected: %d; %s\" % [row_idx, metadata.name])
+
+func _on_multiple_rows_selected(selected_rows: PackedInt32Array) -> void:
+	print(\"Selected rows: %d\" % selected_rows.size())
+
+
 
 func _on_row_double_clicked(row_idx: int) -> void:
 	print(\"Row double clicked: %d\" % row_idx)
@@ -180,6 +191,7 @@ func _on_row_rmb_clicked(row_idx: int) -> void:
 
 	self.add_child(row_menu)
 	row_menu.popup(Rect2i(get_local_mouse_position(), Vector2i.ZERO))
+
 
 
 func _on_cell_clicked(row_idx: int, column_idx: int) -> void:
@@ -221,6 +233,7 @@ script = ExtResource("2_1kret")
 [connection signal="column_clicked" from="VBoxContainer/TableView" to="." method="_on_column_clicked"]
 [connection signal="column_double_clicked" from="VBoxContainer/TableView" to="." method="_on_column_double_clicked"]
 [connection signal="column_rmb_clicked" from="VBoxContainer/TableView" to="." method="_on_column_rmb_clicked"]
-[connection signal="row_clicked" from="VBoxContainer/TableView" to="." method="_on_row_clicked"]
+[connection signal="multiple_rows_selected" from="VBoxContainer/TableView" to="." method="_on_multiple_rows_selected"]
 [connection signal="row_double_clicked" from="VBoxContainer/TableView" to="." method="_on_row_double_clicked"]
 [connection signal="row_rmb_clicked" from="VBoxContainer/TableView" to="." method="_on_row_rmb_clicked"]
+[connection signal="single_row_selected" from="VBoxContainer/TableView" to="." method="_on_single_row_selected"]

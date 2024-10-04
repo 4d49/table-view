@@ -24,7 +24,9 @@ signal column_visibility_changed(column_idx: int, visibility: bool)
 signal row_created(row_idx: int)
 signal row_removed(row_idx: int)
 
-signal row_selected(row_idx: int)
+signal row_selection_changed
+signal single_row_selected(row_idx: int)
+signal multiple_rows_selected(selected_rows: PackedInt32Array)
 
 signal cell_value_changed(row_idx: int, column_idx: int, value: Variant)
 
@@ -167,8 +169,8 @@ func _init() -> void:
 
 	self.cell_double_clicked.connect(_on_cell_double_click)
 
-	self.row_clicked.connect(select_single_row)
 	self.row_rmb_clicked.connect(_on_row_rmb_clicked)
+	self.row_selection_changed.connect(_on_row_selection_changed)
 
 @warning_ignore("unsafe_call_argument")
 func _notification(what: int) -> void:
@@ -402,7 +404,7 @@ func _gui_input(event: InputEvent) -> void:
 						elif event.is_double_click():
 							row_double_clicked.emit(row_idx)
 						else:
-							row_clicked.emit(row_idx)
+							select_single_row(row_idx)
 					else:
 						row_rmb_clicked.emit(row_idx)
 
@@ -1341,7 +1343,7 @@ func select_single_row(row_idx: int) -> void:
 	for i: int in _rows.size():
 		_rows[i][&"selected"] = i == row_idx
 
-	row_selected.emit(row_idx)
+	row_selection_changed.emit()
 	queue_redraw()
 
 func select_row(row_idx: int) -> void:
@@ -1353,7 +1355,7 @@ func select_row(row_idx: int) -> void:
 		_:
 			return
 
-	row_selected.emit(row_idx)
+	row_selection_changed.emit()
 	queue_redraw()
 
 func deselect_row(row_idx: int) -> void:
@@ -1363,6 +1365,7 @@ func deselect_row(row_idx: int) -> void:
 		_:
 			return
 
+	row_selection_changed.emit()
 	queue_redraw()
 
 func is_row_selected(row_idx: int) -> bool:
@@ -1376,13 +1379,22 @@ func toggle_row_selected(row_idx: int) -> void:
 
 
 func get_selected_rows() -> PackedInt32Array:
-	var selected := PackedInt32Array()
+	match get_select_mode():
+		SelectMode.SINGLE_ROW:
+			for i: int in _rows.size():
+				if _rows[i][&"selected"]:
+					return [i]
 
-	for i: int in _rows.size():
-		if _rows[i][&"selected"]:
-			selected.push_back(i)
+		SelectMode.MULTI_ROW:
+			var selected := PackedInt32Array()
 
-	return selected
+			for i: int in _rows.size():
+				if _rows[i][&"selected"]:
+					selected.push_back(i)
+
+			return selected
+
+	return PackedInt32Array()
 
 
 func select_all_rows() -> void:
@@ -1392,12 +1404,14 @@ func select_all_rows() -> void:
 	else:
 		return deselect_all_rows()
 
+	row_selection_changed.emit()
 	queue_redraw()
 
 func deselect_all_rows() -> void:
 	for row: Dictionary in _rows:
 		row.selected = false
 
+	row_selection_changed.emit()
 	queue_redraw()
 
 
@@ -1590,6 +1604,19 @@ func _on_column_rmb_clicked(column_idx: int) -> void:
 		_column_context_menu.set_item_disabled(i, not can_hide_column(i))
 
 	_column_context_menu.popup(Rect2i(get_screen_transform() * get_local_mouse_position(), Vector2i.ZERO))
+
+
+func _on_row_selection_changed() -> void:
+	match get_select_mode():
+		SelectMode.SINGLE_ROW:
+			var selected_rows := get_selected_rows()
+			if selected_rows.is_empty():
+				return
+
+			single_row_selected.emit(selected_rows[0])
+
+		SelectMode.MULTI_ROW:
+			multiple_rows_selected.emit(get_selected_rows())
 
 
 func _on_row_rmb_clicked(row_idx: int) -> void:
