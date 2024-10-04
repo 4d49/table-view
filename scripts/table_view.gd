@@ -1381,13 +1381,22 @@ func toggle_row_selected(row_idx: int) -> void:
 
 
 func get_selected_rows() -> PackedInt32Array:
-	var selected := PackedInt32Array()
+	match get_select_mode():
+		SelectMode.SINGLE_ROW:
+			for i: int in _rows.size():
+				if _rows[i][&"selected"]:
+					return [i]
 
-	for i: int in _rows.size():
-		if _rows[i][&"selected"]:
-			selected.push_back(i)
+		SelectMode.MULTI_ROW:
+			var selected := PackedInt32Array()
 
-	return selected
+			for i: int in _rows.size():
+				if _rows[i][&"selected"]:
+					selected.push_back(i)
+
+			return selected
+
+	return PackedInt32Array()
 
 
 func select_all_rows() -> void:
