@@ -24,6 +24,7 @@ signal column_visibility_changed(column_idx: int, visibility: bool)
 signal row_created(row_idx: int)
 signal row_removed(row_idx: int)
 
+signal row_selection_changed
 signal single_row_selected(row_idx: int)
 signal multiple_rows_selected(selected_rows: PackedInt32Array)
 
@@ -1341,6 +1342,8 @@ func select_single_row(row_idx: int) -> void:
 	for i: int in _rows.size():
 		_rows[i][&"selected"] = i == row_idx
 
+	row_selection_changed.emit()
+
 	if get_select_mode() == SelectMode.SINGLE_ROW:
 		single_row_selected.emit(row_idx)
 	else:
@@ -1357,7 +1360,9 @@ func select_row(row_idx: int) -> void:
 		_:
 			return
 
+	row_selection_changed.emit()
 	multiple_rows_selected.emit(get_selected_rows())
+
 	queue_redraw()
 
 func deselect_row(row_idx: int) -> void:
@@ -1367,6 +1372,7 @@ func deselect_row(row_idx: int) -> void:
 		_:
 			return
 
+	row_selection_changed.emit()
 	queue_redraw()
 
 func is_row_selected(row_idx: int) -> bool:
@@ -1405,12 +1411,14 @@ func select_all_rows() -> void:
 	else:
 		return deselect_all_rows()
 
+	row_selection_changed.emit()
 	queue_redraw()
 
 func deselect_all_rows() -> void:
 	for row: Dictionary in _rows:
 		row.selected = false
 
+	row_selection_changed.emit()
 	queue_redraw()
 
 
