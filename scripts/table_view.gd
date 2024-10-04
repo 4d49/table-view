@@ -24,7 +24,7 @@ signal column_visibility_changed(column_idx: int, visibility: bool)
 signal row_created(row_idx: int)
 signal row_removed(row_idx: int)
 
-signal row_selected(row_idx: int)
+signal single_row_selected(row_idx: int)
 
 signal cell_value_changed(row_idx: int, column_idx: int, value: Variant)
 
@@ -1341,7 +1341,7 @@ func select_single_row(row_idx: int) -> void:
 	for i: int in _rows.size():
 		_rows[i][&"selected"] = i == row_idx
 
-	row_selected.emit(row_idx)
+	single_row_selected.emit(row_idx)
 	queue_redraw()
 
 func select_row(row_idx: int) -> void:
@@ -1353,7 +1353,7 @@ func select_row(row_idx: int) -> void:
 		_:
 			return
 
-	row_selected.emit(row_idx)
+	single_row_selected.emit(row_idx)
 	queue_redraw()
 
 func deselect_row(row_idx: int) -> void:
