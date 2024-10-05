@@ -1328,6 +1328,16 @@ func set_row_visible(row_idx: int, visible: bool) -> void:
 func is_row_visible(row_idx: int) -> bool:
 	return _rows[row_idx][&"visible"]
 
+## Returns an array of visible row indices.
+func get_visible_rows() -> PackedInt32Array:
+	var visible_rows := PackedInt32Array()
+
+	for i: int in _rows.size():
+		if _rows[i][&"visible"]:
+			visible_rows.push_back(i)
+
+	return visible_rows
+
 
 func set_row_metadata(row_idx: int, metadata: Variant) -> void:
 	if metadata == null:
