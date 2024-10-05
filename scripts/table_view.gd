@@ -1410,6 +1410,8 @@ func get_selected_rows_count() -> int:
 			selected_rows += 1
 
 	return selected_rows
+
+## Returns an array of selected row indices.
 func get_selected_rows() -> PackedInt32Array:
 	match get_select_mode():
 		SelectMode.SINGLE_ROW:
