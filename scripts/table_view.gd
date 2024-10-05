@@ -1401,7 +1401,27 @@ func toggle_row_selected(row_idx: int) -> void:
 	else:
 		select_row(row_idx)
 
+## Returns the count of selected rows, unlike [method get_selected_rows], which returns an array.
+func get_selected_rows_count() -> int:
+	if is_select_mode_disabled():
+		return 0
 
+	elif is_select_mode_single_row():
+		for row: Dictionary in _rows:
+			if row.selected:
+				return 1
+
+		return 0
+
+	var selected_rows: int = 0
+
+	for row: Dictionary in _rows:
+		if row.selected:
+			selected_rows += 1
+
+	return selected_rows
+
+## Returns an array of selected row indices.
 func get_selected_rows() -> PackedInt32Array:
 	match get_select_mode():
 		SelectMode.SINGLE_ROW:
