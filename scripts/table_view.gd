@@ -1332,6 +1332,16 @@ func set_row_visible(row_idx: int, visible: bool) -> void:
 func is_row_visible(row_idx: int) -> bool:
 	return _rows[row_idx][&"visible"]
 
+## Returns the count of visible rows, unlike [method get_visible_rows], which returns an array.
+func get_visible_rows_count() -> int:
+	var visible_rows: int = 0
+
+	for row: Dictionary in _rows:
+		if row.visible:
+			visible_rows += 1
+
+	return visible_rows
+
 ## Returns an array of visible row indices.
 func get_visible_rows() -> PackedInt32Array:
 	var visible_rows := PackedInt32Array()
