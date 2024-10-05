@@ -1307,6 +1307,10 @@ func set_row_count(new_size: int) -> void:
 		return
 
 	_rows.resize(new_size)
+	for row: Dictionary in _rows:
+		row.visible = true
+		row.selected = false
+
 	while old_size < new_size:
 		_rows[old_size] = create_row(_columns)
 		old_size += 1
