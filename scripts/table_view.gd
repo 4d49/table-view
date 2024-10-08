@@ -560,7 +560,6 @@ func update_table() -> void:
 		text_line.set_width(0.0)
 
 		column.rect = calculate_column_rect(text_line.get_size(), get_sort_mode_icon(column.sort_mode))
-		column.dirty = false
 	#endregion
 
 	var cell_height: int = _font.get_height(_font_size) + _inner_margin_top + _inner_margin_bottom
@@ -649,8 +648,6 @@ func update_table() -> void:
 
 			row.rect = Rect2i(drawable_rect.position.x, row_ofs, row_width, row_height)
 			content_rect.end = row.rect.end
-
-			row.dirty = false
 
 			row_ofs += row_height
 
@@ -1015,7 +1012,6 @@ static func create_column(
 	var column: Dictionary[StringName, Variant] = {
 		&"rect": Rect2i(),
 		&"title": title,
-		&"dirty": true,
 		&"tooltip": "",
 		&"visible": true,
 		&"text_line": text_line,
@@ -1178,8 +1174,6 @@ func set_column_custom_width(column_idx: int, custom_width: int) -> void:
 		return
 
 	_columns[column_idx][&"custom_width"] = maxf(custom_width, 0.0)
-	_columns[column_idx][&"dirty"] = true
-
 	mark_dirty()
 ## Returns the custom width of a column.
 func get_column_custom_width(column_idx: int) -> int:
@@ -1191,8 +1185,6 @@ func set_column_minimum_width(column_idx: int, minimum_width: int) -> void:
 		return
 
 	_columns[column_idx][&"minimum_width"] = maxf(minimum_width, COLUMN_MINIMUM_WIDTH)
-	_columns[column_idx][&"dirty"] = true
-
 	mark_dirty()
 ## Returns the minimum width of a column.
 func get_column_minimum_width(column_idx: int) -> int:
@@ -1328,7 +1320,6 @@ static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Var
 	var row: Dictionary[StringName, Variant] = {
 		&"rect": Rect2i(),
 		&"cells": cells,
-		&"dirty": true,
 		&"visible": true,
 		&"selected": false,
 	}
