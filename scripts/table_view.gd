@@ -31,8 +31,6 @@ signal multiple_rows_selected(selected_rows: PackedInt32Array)
 signal cell_value_changed(row_idx: int, column_idx: int, value: Variant)
 
 
-const NUMBERS_AFTER_DOT = 3
-
 const DEBUG_ENABLED: bool = false
 
 
@@ -60,7 +58,7 @@ enum DrawMode {
 enum ColumnResizeMode {
 	STRETCH,
 #	INTERACTIVE,
-#	FIXED,
+	FIXED,
 #	RESIZE_TO_CONTENTS,
 }
 enum SortMode {
@@ -74,6 +72,9 @@ enum SelectMode {
 	MULTI_ROW,
 }
 
+
+const NUMBERS_AFTER_DOT = 3
+const COLUMN_MINIMUM_WIDTH = 50.0
 
 const DEFAULT_NUM_MIN = -2147483648
 const DEFAULT_NUM_MAX =  2147483647
@@ -176,7 +177,7 @@ func _init() -> void:
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_RESIZED:
-			update_table(true)
+			update_table()
 
 		NOTIFICATION_DRAW when DEBUG_ENABLED:
 			if is_dirty():
@@ -211,15 +212,15 @@ func _notification(what: int) -> void:
 					if not drawable_rect.intersects(rect):
 						continue
 
-					rect = inner_margin_rect(rect)
+					rect = margin_rect(rect)
 					draw_rect(rect, Color(cell.color, 0.25))
 
 					match cell.type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
-							texture.draw(get_canvas_item(), get_text_position(rect, texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+							texture.draw(get_canvas_item(), get_texture_position_in_rect(texture.get_size(), rect, HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
-							draw_rect(inner_margin_rect(rect), cell.value)
+							draw_rect(margin_rect(rect), cell.value)
 						_:
 							draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
 
@@ -231,7 +232,7 @@ func _notification(what: int) -> void:
 				if not drawable_rect.intersects(rect):
 					continue
 
-				rect = inner_margin_rect(rect)
+				rect = margin_rect(rect)
 				draw_rect(rect, Color(column.color, 0.5))
 				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, rect)
 
@@ -286,12 +287,12 @@ func _notification(what: int) -> void:
 					match cell.type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
-							texture.draw(_canvas, get_text_position(inner_margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+							texture.draw(_canvas, get_texture_position_in_rect(texture.get_size(), margin_rect(rect), HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
 							var color: Color = Color.BLACK if cell.value == null else cell.value
-							RenderingServer.canvas_item_add_rect(_canvas, inner_margin_rect(rect), color)
+							RenderingServer.canvas_item_add_rect(_canvas, margin_rect(rect), color)
 						_:
-							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
+							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
 
 				idx += 1
 
@@ -313,9 +314,9 @@ func _notification(what: int) -> void:
 
 				var icon := get_sort_mode_icon(column.sort_mode)
 				if is_instance_valid(icon):
-					icon.draw(_canvas, get_text_position(inner_margin_rect(rect), icon.get_size(), HORIZONTAL_ALIGNMENT_RIGHT))
+					icon.draw(_canvas, get_texture_position_in_rect(icon.get_size(), margin_rect(rect), HORIZONTAL_ALIGNMENT_RIGHT))
 
-				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
+				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
 
 		NOTIFICATION_THEME_CHANGED:
 			_inner_margin_left = get_theme_constant(&"inner_margin_left", &"TableView")
@@ -459,8 +460,12 @@ func _get_tooltip(at_position: Vector2) -> String:
 
 	return get_tooltip_text()
 
+
+func margin_width(width: float) -> float:
+	return width - _inner_margin_left - _inner_margin_right
+
 ## Returns [Rect2] with margin offsets.
-func inner_margin_rect(rect: Rect2) -> Rect2:
+func margin_rect(rect: Rect2) -> Rect2:
 	return rect.grow_individual(-_inner_margin_left, -_inner_margin_top, -_inner_margin_right, -_inner_margin_bottom)
 
 
@@ -546,7 +551,7 @@ func calculate_column_rect(text_size: Vector2i, texture: Texture2D) -> Rect2i:
 	return rect
 
 @warning_ignore("unsafe_call_argument", "return_value_discarded", "narrowing_conversion")
-func update_table(force: bool = false) -> void:
+func update_table() -> void:
 	if _columns.is_empty():
 		return
 
@@ -556,12 +561,9 @@ func update_table(force: bool = false) -> void:
 			continue
 
 		var text_line: TextLine = column.text_line
-		if force or column.dirty:
-			text_line.clear()
-			text_line.add_string(column.title, _font, _font_size)
+		text_line.set_width(0.0)
 
 		column.rect = calculate_column_rect(text_line.get_size(), get_sort_mode_icon(column.sort_mode))
-		column.dirty = false
 	#endregion
 
 	var cell_height: int = _font.get_height(_font_size) + _inner_margin_top + _inner_margin_bottom
@@ -585,16 +587,40 @@ func update_table(force: bool = false) -> void:
 			count_visible_columns = maxi(1, count_visible_columns)
 
 			var rect := Rect2i(ofs_x, ofs_y, maxi(min_size.x + _inner_margin_left + _inner_margin_right, drawable_rect.size.x / count_visible_columns), cell_height)
-			_header = rect
+			_header.position = rect.position
 
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
 
 				column.rect = rect
+
+				var text_line: TextLine = column.text_line
+				text_line.set_width(margin_width(rect.size.x))
+
 				_header.end = rect.end
 
 				rect.position.x += rect.size.x
+
+		ColumnResizeMode.FIXED:
+			var ofx_x: int = drawable_rect.position.x
+			var ofx_y: int = drawable_rect.position.y
+
+			_header.position = Vector2i(ofx_x, ofx_y)
+
+			for column: Dictionary in _columns:
+				if not column.visible:
+					continue
+
+				var rect := Rect2i(ofx_x, ofx_y, maxi(column.custom_width, column.minimum_width), cell_height)
+
+				var text_line: TextLine = column.text_line
+				text_line.set_width(margin_width(rect.size.x))
+
+				column.rect = rect
+				_header.end = rect.end
+
+				ofx_x = rect.end.x
 
 	var content_rect: Rect2i = _header
 
@@ -609,8 +635,6 @@ func update_table(force: bool = false) -> void:
 				continue
 
 			var cells: Array[Dictionary] = row.cells
-			var row_update: bool = force or row.dirty
-
 			var cell_ofs: int = drawable_rect.position.x
 
 			for i: int in _columns.size():
@@ -620,26 +644,14 @@ func update_table(force: bool = false) -> void:
 				var cell: Dictionary = cells[i]
 				var cell_width: int = _columns[i].rect.size.x
 
-				var stringifier: Callable = cell.type_hint.stringifier
-
 				var text_line: TextLine = cell.text_line
-				if row_update:
-					text_line.clear()
-
-					if cell.value == null:
-						text_line.add_string("<null>", _font, _font_size)
-					else:
-						text_line.add_string(stringifier.call(cell.value), _font, _font_size)
-
-				text_line.set_width(cell_width)
+				text_line.set_width(margin_width(cell_width))
 
 				cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
 				cell_ofs += cell_width
 
 			row.rect = Rect2i(drawable_rect.position.x, row_ofs, row_width, row_height)
 			content_rect.end = row.rect.end
-
-			row.dirty = false
 
 			row_ofs += row_height
 
@@ -1002,9 +1014,8 @@ static func create_column(
 	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
 
 	var column: Dictionary[StringName, Variant] = {
-		&"title": title,
 		&"rect": Rect2i(),
-		&"dirty": true,
+		&"title": title,
 		&"tooltip": "",
 		&"visible": true,
 		&"text_line": text_line,
@@ -1016,8 +1027,10 @@ static func create_column(
 			edit_handler,
 		),
 		&"draw_mode": DrawMode.NORMAL,
-		&"comparator": comparator,
 		&"sort_mode": SortMode.NONE,
+		&"comparator": comparator,
+		&"custom_width": 0.0,
+		&"minimum_width": COLUMN_MINIMUM_WIDTH,
 	}
 
 	if DEBUG_ENABLED:
@@ -1045,6 +1058,10 @@ func add_column(
 		edit_handler,
 		comparator
 	)
+
+	var text_line: TextLine = column.text_line
+	text_line.add_string(title, _font, _font_size)
+
 	_columns.push_back(column)
 
 	var type_hint: Dictionary = column.type_hint
@@ -1104,13 +1121,17 @@ func get_column_count() -> int:
 
 
 func set_column_title(column_idx: int, title: String) -> void:
-	if _columns[column_idx][&"title"] == title:
+	var column: Dictionary = _columns[column_idx]
+	if column.title == title:
 		return
 
-	_columns[column_idx][&"title"] = title
-	_columns[column_idx][&"dirty"] = true
+	var text_line: TextLine = column.text_line
+	text_line.clear()
+	text_line.add_string(title, _font, _font_size)
 
-	mark_dirty()
+	column.title = title
+
+	queue_redraw()
 
 func get_column_title(column_idx: int) -> String:
 	return _columns[column_idx][&"title"]
@@ -1150,6 +1171,32 @@ func set_column_visible(column_idx: int, visible: bool) -> bool:
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
+
+## Sets the custom width for a column.
+func set_column_custom_width(column_idx: int, custom_width: int) -> void:
+	if _columns[column_idx][&"custom_width"] == maxf(custom_width, 0.0):
+		return
+
+	_columns[column_idx][&"custom_width"] = maxf(custom_width, 0.0)
+	mark_dirty()
+## Returns the custom width of a column.
+func get_column_custom_width(column_idx: int) -> int:
+	return _columns[column_idx][&"custom_width"]
+
+## Sets the minimum width for a column.
+func set_column_minimum_width(column_idx: int, minimum_width: int) -> void:
+	if _columns[column_idx][&"minimum_width"] == maxf(minimum_width, COLUMN_MINIMUM_WIDTH):
+		return
+
+	_columns[column_idx][&"minimum_width"] = maxf(minimum_width, COLUMN_MINIMUM_WIDTH)
+	mark_dirty()
+## Returns the minimum width of a column.
+func get_column_minimum_width(column_idx: int) -> int:
+	return _columns[column_idx][&"minimum_width"]
+
+## Returns the largest value between [param custom_width] and [param minimum_width].
+func get_column_width(column_idx: int) -> int:
+	return maxi(_columns[column_idx][&"custom_width"], _columns[column_idx][&"minimum_width"])
 
 
 func set_column_type(
@@ -1277,7 +1324,6 @@ static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Var
 	var row: Dictionary[StringName, Variant] = {
 		&"rect": Rect2i(),
 		&"cells": cells,
-		&"dirty": true,
 		&"visible": true,
 		&"selected": false,
 	}
@@ -1461,26 +1507,27 @@ func deselect_all_rows() -> void:
 
 
 
-func set_cell_value_no_update(row_idx: int, column_idx: int, value: Variant) -> bool:
-	var row: Dictionary = _rows[row_idx]
-	var cell: Dictionary = row.cells[column_idx]
-
+func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> bool:
+	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
 	if is_same(cell.value, value):
 		return false
 
+	var text_line: TextLine = cell.text_line
+	text_line.clear()
+
+	var stringifier: Callable = cell.type_hint.stringifier
+	if not stringifier.is_valid() or value == null:
+		text_line.add_string("<null>", _font, _font_size)
+	else:
+		text_line.add_string(stringifier.call(value), _font, _font_size)
+
 	cell.value = value
-	row.dirty = true
 
 	return true
 
 func set_cell_value(row_idx: int, column_idx: int, value: Variant) -> void:
-	if set_cell_value_no_update(row_idx, column_idx, value):
+	if set_cell_value_no_signal(row_idx, column_idx, value):
 		cell_value_changed.emit(row_idx, column_idx, value)
-		mark_dirty()
-
-func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> void:
-	if set_cell_value_no_update(row_idx, column_idx, value):
-		mark_dirty()
 
 func get_cell_value(row_idx: int, column_idx: int) -> Variant:
 	return _rows[row_idx][&"cells"][column_idx][&"value"]
@@ -1708,18 +1755,23 @@ func _on_scroll_value_changed(_value) -> void:
 
 
 
-static func get_text_position(rect: Rect2, text_size: Vector2, alignment: HorizontalAlignment) -> Vector2:
-	if alignment == HORIZONTAL_ALIGNMENT_CENTER:
-		return rect.get_center() - text_size * 0.5
-	elif alignment == HORIZONTAL_ALIGNMENT_RIGHT:
-		return Vector2(rect.position.x + rect.size.x - text_size.x, rect.position.y + rect.size.y * 0.5 - text_size.y * 0.5)
-
-	return Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 - text_size.y * 0.5)
-
 static func draw_text_line(ci: RID, text_line: TextLine, font_color: Color, outline_size: int, outline_color: Color, rect: Rect2) -> void:
-	var text_position := get_text_position(rect, text_line.get_size(), text_line.get_horizontal_alignment())
+	var text_position := Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 - text_line.get_size().y * 0.5)
 
 	if outline_size and outline_color.a:
 		text_line.draw_outline(ci, text_position, outline_size, outline_color)
 
 	text_line.draw(ci, text_position, font_color)
+
+
+static func get_texture_position_in_rect(texture_size: Vector2, rect: Rect2, alignment: HorizontalAlignment) -> Vector2:
+	var horizontal_position: float
+	match alignment:
+		HORIZONTAL_ALIGNMENT_LEFT:
+			horizontal_position = rect.position.x
+		HORIZONTAL_ALIGNMENT_RIGHT:
+			horizontal_position = rect.position.x + rect.size.x - texture_size.x
+		_:
+			horizontal_position = rect.get_center().x - texture_size.x * 0.5
+
+	return Vector2(horizontal_position, rect.position.y + rect.size.y * 0.5 - texture_size.y * 0.5)
