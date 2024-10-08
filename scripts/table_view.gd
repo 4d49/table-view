@@ -1019,6 +1019,7 @@ static func create_column(
 		&"draw_mode": DrawMode.NORMAL,
 		&"sort_mode": SortMode.NONE,
 		&"comparator": comparator,
+		&"custom_width": 0.0,
 		&"minimum_width": COLUMN_MINIMUM_WIDTH,
 	}
 
@@ -1152,6 +1153,19 @@ func set_column_visible(column_idx: int, visible: bool) -> bool:
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
+
+## Sets the custom width for a column.
+func set_column_custom_width(column_idx: int, custom_width: int) -> void:
+	if _columns[column_idx][&"custom_width"] == maxf(custom_width, 0.0):
+		return
+
+	_columns[column_idx][&"custom_width"] = maxf(custom_width, 0.0)
+	_columns[column_idx][&"dirty"] = true
+
+	mark_dirty()
+## Returns the custom width of a column.
+func get_column_custom_width(column_idx: int) -> int:
+	return _columns[column_idx][&"custom_width"]
 
 ## Sets the minimum width for a column.
 func set_column_minimum_width(column_idx: int, minimum_width: int) -> void:
