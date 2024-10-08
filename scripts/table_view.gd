@@ -1760,16 +1760,8 @@ func _on_scroll_value_changed(_value) -> void:
 
 
 
-static func get_text_position(rect: Rect2, text_size: Vector2, alignment: HorizontalAlignment) -> Vector2:
-	if alignment == HORIZONTAL_ALIGNMENT_CENTER:
-		return rect.get_center() - text_size * 0.5
-	elif alignment == HORIZONTAL_ALIGNMENT_RIGHT:
-		return Vector2(rect.position.x + rect.size.x - text_size.x, rect.position.y + rect.size.y * 0.5 - text_size.y * 0.5)
-
-	return Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 - text_size.y * 0.5)
-
 static func draw_text_line(ci: RID, text_line: TextLine, font_color: Color, outline_size: int, outline_color: Color, rect: Rect2) -> void:
-	var text_position := get_text_position(rect, text_line.get_size(), text_line.get_horizontal_alignment())
+	var text_position := Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 - text_line.get_size().y * 0.5)
 
 	if outline_size and outline_color.a:
 		text_line.draw_outline(ci, text_position, outline_size, outline_color)
