@@ -177,7 +177,7 @@ func _init() -> void:
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_RESIZED:
-			update_table(true)
+			update_table()
 
 		NOTIFICATION_DRAW when DEBUG_ENABLED:
 			if is_dirty():
@@ -547,7 +547,7 @@ func calculate_column_rect(text_size: Vector2i, texture: Texture2D) -> Rect2i:
 	return rect
 
 @warning_ignore("unsafe_call_argument", "return_value_discarded", "narrowing_conversion")
-func update_table(force: bool = false) -> void:
+func update_table() -> void:
 	if _columns.is_empty():
 		return
 
@@ -557,9 +557,7 @@ func update_table(force: bool = false) -> void:
 			continue
 
 		var text_line: TextLine = column.text_line
-		if force or column.dirty:
-			text_line.clear()
-			text_line.add_string(column.title, _font, _font_size)
+		text_line.set_width(0.0)
 
 		column.rect = calculate_column_rect(text_line.get_size(), get_sort_mode_icon(column.sort_mode))
 		column.dirty = false
@@ -586,13 +584,17 @@ func update_table(force: bool = false) -> void:
 			count_visible_columns = maxi(1, count_visible_columns)
 
 			var rect := Rect2i(ofs_x, ofs_y, maxi(min_size.x + _inner_margin_left + _inner_margin_right, drawable_rect.size.x / count_visible_columns), cell_height)
-			_header = rect
+			_header.position = rect.position
 
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
 
 				column.rect = rect
+
+				var text_line: TextLine = column.text_line
+				text_line.set_width(margin_width(rect.size.x))
+
 				_header.end = rect.end
 
 				rect.position.x += rect.size.x
@@ -630,8 +632,6 @@ func update_table(force: bool = false) -> void:
 				continue
 
 			var cells: Array[Dictionary] = row.cells
-			var row_update: bool = force or row.dirty
-
 			var cell_ofs: int = drawable_rect.position.x
 
 			for i: int in _columns.size():
@@ -641,17 +641,7 @@ func update_table(force: bool = false) -> void:
 				var cell: Dictionary = cells[i]
 				var cell_width: int = _columns[i].rect.size.x
 
-				var stringifier: Callable = cell.type_hint.stringifier
-
 				var text_line: TextLine = cell.text_line
-				if row_update:
-					text_line.clear()
-
-					if cell.value == null:
-						text_line.add_string("<null>", _font, _font_size)
-					else:
-						text_line.add_string(stringifier.call(cell.value), _font, _font_size)
-
 				text_line.set_width(cell_width)
 
 				cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
