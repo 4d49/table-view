@@ -58,7 +58,7 @@ enum DrawMode {
 enum ColumnResizeMode {
 	STRETCH,
 #	INTERACTIVE,
-#	FIXED,
+	FIXED,
 #	RESIZE_TO_CONTENTS,
 }
 enum SortMode {
@@ -596,6 +596,26 @@ func update_table(force: bool = false) -> void:
 				_header.end = rect.end
 
 				rect.position.x += rect.size.x
+
+		ColumnResizeMode.FIXED:
+			var ofx_x: int = drawable_rect.position.x
+			var ofx_y: int = drawable_rect.position.y
+
+			_header.position = Vector2i(ofx_x, ofx_y)
+
+			for column: Dictionary in _columns:
+				if not column.visible:
+					continue
+
+				var rect := Rect2i(ofx_x, ofx_y, maxi(column.custom_width, column.minimum_width), cell_height)
+
+				var text_line: TextLine = column.text_line
+				text_line.set_width(margin_rect(rect).size.x)
+
+				column.rect = rect
+				_header.end = rect.end
+
+				ofx_x = rect.end.x
 
 	var content_rect: Rect2i = _header
 
