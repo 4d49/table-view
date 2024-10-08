@@ -1180,6 +1180,10 @@ func set_column_minimum_width(column_idx: int, minimum_width: int) -> void:
 func get_column_minimum_width(column_idx: int) -> int:
 	return _columns[column_idx][&"minimum_width"]
 
+## Returns the largest value between [param custom_width] and [param minimum_width].
+func get_column_width(column_idx: int) -> int:
+	return maxi(_columns[column_idx][&"custom_width"], _columns[column_idx][&"minimum_width"])
+
 
 func set_column_type(
 		column_idx: int,
