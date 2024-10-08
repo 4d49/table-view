@@ -212,7 +212,7 @@ func _notification(what: int) -> void:
 					if not drawable_rect.intersects(rect):
 						continue
 
-					rect = inner_margin_rect(rect)
+					rect = margin_rect(rect)
 					draw_rect(rect, Color(cell.color, 0.25))
 
 					match cell.type_hint.type:
@@ -220,7 +220,7 @@ func _notification(what: int) -> void:
 							var texture: Texture2D = _checked if cell.value else _unchecked
 							texture.draw(get_canvas_item(), get_text_position(rect, texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
-							draw_rect(inner_margin_rect(rect), cell.value)
+							draw_rect(margin_rect(rect), cell.value)
 						_:
 							draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
 
@@ -232,7 +232,7 @@ func _notification(what: int) -> void:
 				if not drawable_rect.intersects(rect):
 					continue
 
-				rect = inner_margin_rect(rect)
+				rect = margin_rect(rect)
 				draw_rect(rect, Color(column.color, 0.5))
 				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, rect)
 
@@ -287,12 +287,12 @@ func _notification(what: int) -> void:
 					match cell.type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
-							texture.draw(_canvas, get_text_position(inner_margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+							texture.draw(_canvas, get_text_position(margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
 							var color: Color = Color.BLACK if cell.value == null else cell.value
-							RenderingServer.canvas_item_add_rect(_canvas, inner_margin_rect(rect), color)
+							RenderingServer.canvas_item_add_rect(_canvas, margin_rect(rect), color)
 						_:
-							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
+							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
 
 				idx += 1
 
@@ -314,9 +314,9 @@ func _notification(what: int) -> void:
 
 				var icon := get_sort_mode_icon(column.sort_mode)
 				if is_instance_valid(icon):
-					icon.draw(_canvas, get_text_position(inner_margin_rect(rect), icon.get_size(), HORIZONTAL_ALIGNMENT_RIGHT))
+					icon.draw(_canvas, get_text_position(margin_rect(rect), icon.get_size(), HORIZONTAL_ALIGNMENT_RIGHT))
 
-				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, inner_margin_rect(rect))
+				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
 
 		NOTIFICATION_THEME_CHANGED:
 			_inner_margin_left = get_theme_constant(&"inner_margin_left", &"TableView")
@@ -461,7 +461,7 @@ func _get_tooltip(at_position: Vector2) -> String:
 	return get_tooltip_text()
 
 ## Returns [Rect2] with margin offsets.
-func inner_margin_rect(rect: Rect2) -> Rect2:
+func margin_rect(rect: Rect2) -> Rect2:
 	return rect.grow_individual(-_inner_margin_left, -_inner_margin_top, -_inner_margin_right, -_inner_margin_bottom)
 
 
