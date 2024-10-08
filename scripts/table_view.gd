@@ -218,7 +218,7 @@ func _notification(what: int) -> void:
 					match cell.type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
-							texture.draw(get_canvas_item(), get_text_position(rect, texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+							texture.draw(get_canvas_item(), get_texture_position_in_rect(texture.get_size(), rect, HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
 							draw_rect(margin_rect(rect), cell.value)
 						_:
@@ -287,7 +287,7 @@ func _notification(what: int) -> void:
 					match cell.type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
-							texture.draw(_canvas, get_text_position(margin_rect(rect), texture.get_size(), HORIZONTAL_ALIGNMENT_LEFT))
+							texture.draw(_canvas, get_texture_position_in_rect(texture.get_size(), margin_rect(rect), HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
 							var color: Color = Color.BLACK if cell.value == null else cell.value
 							RenderingServer.canvas_item_add_rect(_canvas, margin_rect(rect), color)
@@ -314,7 +314,7 @@ func _notification(what: int) -> void:
 
 				var icon := get_sort_mode_icon(column.sort_mode)
 				if is_instance_valid(icon):
-					icon.draw(_canvas, get_text_position(margin_rect(rect), icon.get_size(), HORIZONTAL_ALIGNMENT_RIGHT))
+					icon.draw(_canvas, get_texture_position_in_rect(icon.get_size(), margin_rect(rect), HORIZONTAL_ALIGNMENT_RIGHT))
 
 				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
 
@@ -1767,3 +1767,16 @@ static func draw_text_line(ci: RID, text_line: TextLine, font_color: Color, outl
 		text_line.draw_outline(ci, text_position, outline_size, outline_color)
 
 	text_line.draw(ci, text_position, font_color)
+
+
+static func get_texture_position_in_rect(texture_size: Vector2, rect: Rect2, alignment: HorizontalAlignment) -> Vector2:
+	var horizontal_position: float
+	match alignment:
+		HORIZONTAL_ALIGNMENT_LEFT:
+			horizontal_position = rect.position.x
+		HORIZONTAL_ALIGNMENT_RIGHT:
+			horizontal_position = rect.position.x + rect.size.x - texture_size.x
+		_:
+			horizontal_position = rect.get_center().x - texture_size.x * 0.5
+
+	return Vector2(horizontal_position, rect.position.y + rect.size.y * 0.5 - texture_size.y * 0.5)
