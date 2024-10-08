@@ -1514,26 +1514,27 @@ func deselect_all_rows() -> void:
 
 
 
-func set_cell_value_no_update(row_idx: int, column_idx: int, value: Variant) -> bool:
-	var row: Dictionary = _rows[row_idx]
-	var cell: Dictionary = row.cells[column_idx]
-
+func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> bool:
+	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
 	if is_same(cell.value, value):
 		return false
 
+	var text_line: TextLine = cell.text_line
+	text_line.clear()
+
+	var stringifier: Callable = cell.type_hint.stringifier
+	if not stringifier.is_valid() or value == null:
+		text_line.add_string("<null>", _font, _font_size)
+	else:
+		text_line.add_string(stringifier.call(value), _font, _font_size)
+
 	cell.value = value
-	row.dirty = true
 
 	return true
 
 func set_cell_value(row_idx: int, column_idx: int, value: Variant) -> void:
-	if set_cell_value_no_update(row_idx, column_idx, value):
+	if set_cell_value_no_signal(row_idx, column_idx, value):
 		cell_value_changed.emit(row_idx, column_idx, value)
-		mark_dirty()
-
-func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> void:
-	if set_cell_value_no_update(row_idx, column_idx, value):
-		mark_dirty()
 
 func get_cell_value(row_idx: int, column_idx: int) -> Variant:
 	return _rows[row_idx][&"cells"][column_idx][&"value"]
