@@ -1127,13 +1127,17 @@ func get_column_count() -> int:
 
 
 func set_column_title(column_idx: int, title: String) -> void:
-	if _columns[column_idx][&"title"] == title:
+	var column: Dictionary = _columns[column_idx]
+	if column.title == title:
 		return
 
-	_columns[column_idx][&"title"] = title
-	_columns[column_idx][&"dirty"] = true
+	var text_line: TextLine = column.text_line
+	text_line.clear()
+	text_line.add_string(title, _font, _font_size)
 
-	mark_dirty()
+	column.title = title
+
+	queue_redraw()
 
 func get_column_title(column_idx: int) -> String:
 	return _columns[column_idx][&"title"]
