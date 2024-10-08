@@ -1058,6 +1058,10 @@ func add_column(
 		edit_handler,
 		comparator
 	)
+
+	var text_line: TextLine = column.text_line
+	text_line.add_string(title, _font, _font_size)
+
 	_columns.push_back(column)
 
 	var type_hint: Dictionary = column.type_hint
