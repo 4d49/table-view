@@ -31,8 +31,6 @@ signal multiple_rows_selected(selected_rows: PackedInt32Array)
 signal cell_value_changed(row_idx: int, column_idx: int, value: Variant)
 
 
-const NUMBERS_AFTER_DOT = 3
-
 const DEBUG_ENABLED: bool = false
 
 
@@ -74,6 +72,9 @@ enum SelectMode {
 	MULTI_ROW,
 }
 
+
+const NUMBERS_AFTER_DOT = 3
+const COLUMN_MINIMUM_WIDTH = 50.0
 
 const DEFAULT_NUM_MIN = -2147483648
 const DEFAULT_NUM_MAX =  2147483647
@@ -1002,8 +1003,8 @@ static func create_column(
 	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
 
 	var column: Dictionary[StringName, Variant] = {
-		&"title": title,
 		&"rect": Rect2i(),
+		&"title": title,
 		&"dirty": true,
 		&"tooltip": "",
 		&"visible": true,
@@ -1016,8 +1017,9 @@ static func create_column(
 			edit_handler,
 		),
 		&"draw_mode": DrawMode.NORMAL,
-		&"comparator": comparator,
 		&"sort_mode": SortMode.NONE,
+		&"comparator": comparator,
+		&"minimum_width": COLUMN_MINIMUM_WIDTH,
 	}
 
 	if DEBUG_ENABLED:
@@ -1150,6 +1152,19 @@ func set_column_visible(column_idx: int, visible: bool) -> bool:
 
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
+
+## Sets the minimum width for a column.
+func set_column_minimum_width(column_idx: int, minimum_width: int) -> void:
+	if _columns[column_idx][&"minimum_width"] == maxf(minimum_width, COLUMN_MINIMUM_WIDTH):
+		return
+
+	_columns[column_idx][&"minimum_width"] = maxf(minimum_width, COLUMN_MINIMUM_WIDTH)
+	_columns[column_idx][&"dirty"] = true
+
+	mark_dirty()
+## Returns the minimum width of a column.
+func get_column_minimum_width(column_idx: int) -> int:
+	return _columns[column_idx][&"minimum_width"]
 
 
 func set_column_type(
