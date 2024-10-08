@@ -460,6 +460,10 @@ func _get_tooltip(at_position: Vector2) -> String:
 
 	return get_tooltip_text()
 
+
+func margin_width(width: float) -> float:
+	return width - _inner_margin_left - _inner_margin_right
+
 ## Returns [Rect2] with margin offsets.
 func margin_rect(rect: Rect2) -> Rect2:
 	return rect.grow_individual(-_inner_margin_left, -_inner_margin_top, -_inner_margin_right, -_inner_margin_bottom)
@@ -611,7 +615,7 @@ func update_table() -> void:
 				var rect := Rect2i(ofx_x, ofx_y, maxi(column.custom_width, column.minimum_width), cell_height)
 
 				var text_line: TextLine = column.text_line
-				text_line.set_width(margin_rect(rect).size.x)
+				text_line.set_width(margin_width(rect.size.x))
 
 				column.rect = rect
 				_header.end = rect.end
@@ -641,7 +645,7 @@ func update_table() -> void:
 				var cell_width: int = _columns[i].rect.size.x
 
 				var text_line: TextLine = cell.text_line
-				text_line.set_width(cell_width)
+				text_line.set_width(margin_width(cell_width))
 
 				cell.rect = Rect2i(cell_ofs, row_ofs, cell_width, row_height)
 				cell_ofs += cell_width
