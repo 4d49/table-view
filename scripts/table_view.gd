@@ -232,9 +232,10 @@ func _notification(what: int) -> void:
 				if not drawable_rect.intersects(rect):
 					continue
 
-				rect = margin_rect(rect)
-				draw_rect(rect, Color(column.color, 0.5))
-				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, rect)
+				draw_rect(margin_rect(rect), Color(column.color, 0.5))
+				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, margin_rect(rect))
+
+				draw_rect(grip_rect(rect), Color(Color.BLUE, 0.5))
 
 		NOTIFICATION_DRAW:
 			if is_dirty():
