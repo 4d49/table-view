@@ -1643,6 +1643,21 @@ func grip_rect(rect: Rect2) -> Rect2:
 		rect.size.y,
 	)
 
+func find_resizable_column(point: Vector2) -> int:
+	if not _header.has_point(point):
+		return INVALID_COLUMN
+
+	for i: int in _columns.size():
+		if not _columns[i][&"visible"]:
+			continue
+
+		var rect := scrolled_rect_horizontal(_columns[i][&"rect"])
+		if grip_rect(rect).has_point(point):
+			return i
+
+	return INVALID_COLUMN
+
+
 func find_row_at_position(point: Vector2) -> int:
 	for i: int in _rows.size():
 		var row: Dictionary = _rows[i]
