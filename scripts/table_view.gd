@@ -57,7 +57,7 @@ enum DrawMode {
 }
 enum ColumnResizeMode {
 	STRETCH,
-#	INTERACTIVE,
+	INTERACTIVE,
 	FIXED,
 #	RESIZE_TO_CONTENTS,
 }
@@ -107,6 +107,12 @@ var _canvas: RID = RID()
 
 var _cell_editor: Node = null
 var _column_context_menu: PopupMenu = null
+
+var _resized_column: int = INVALID_COLUMN
+var _resized_column_width: int = 0
+
+var _drag_from: Vector2 = Vector2.ZERO
+var _drag_to: Vector2 = Vector2.ZERO
 
 #region theme cache
 var _inner_margin_left: float = 0
@@ -362,18 +368,27 @@ func _notification(what: int) -> void:
 
 
 func _handle_column_event(event: InputEventMouseButton, position: Vector2) -> void:
-	var column_idx := find_column_at_position(scrolled_position_horizontal(position))
+	position = scrolled_position_horizontal(position)
+
+	var column_idx := find_column_at_position(position)
 	if column_idx == INVALID_COLUMN:
 		return
 
 	if event.get_button_index() == MOUSE_BUTTON_LEFT:
 		if event.is_double_click():
 			column_double_clicked.emit(column_idx)
+
+		elif grip_rect(get_column_rect(column_idx)).has_point(position):
+			_columns[column_idx][&"draw_mode"] = DrawMode.HOVER
+
+			_resized_column = column_idx
+			_resized_column_width = get_column_width(column_idx)
+
+			_drag_from = position
 		else:
 			column_clicked.emit(column_idx)
 	else:
 		column_rmb_clicked.emit(column_idx)
-
 
 func _handle_left_mouse_row_event(event: InputEventMouseButton, row_idx: int) -> void:
 	if event.is_ctrl_pressed():
@@ -413,13 +428,25 @@ func _handle_row_event(event: InputEventMouseButton, position: Vector2) -> void:
 @warning_ignore("unsafe_method_access", "unsafe_call_argument", "return_value_discarded")
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
-		for column: Dictionary in _columns:
-			if not column.visible:
-				continue
-			elif scrolled_rect_horizontal(column.rect).has_point(event.get_position()):
-				column.draw_mode = DrawMode.HOVER
-			else:
-				column.draw_mode = DrawMode.NORMAL
+		var position: Vector2 = event.get_position()
+		_drag_to = scrolled_position(position)
+
+		if _resized_column == INVALID_COLUMN:
+			for column in _columns:
+				if not column.visible:
+					continue
+
+				var column_rect = scrolled_rect_horizontal(column.rect).grow_side(SIDE_LEFT, -2)
+				column.draw_mode = DrawMode.HOVER if column_rect.has_point(position) else DrawMode.NORMAL
+
+		# Handle interactive column resizing mode
+		if column_resize_mode == ColumnResizeMode.INTERACTIVE:
+			var is_resizing: bool = _resized_column != INVALID_COLUMN or find_resizable_column(_drag_to) != INVALID_COLUMN
+			set_default_cursor_shape(CURSOR_HSIZE if is_resizing else CURSOR_ARROW)
+
+			if _resized_column != INVALID_COLUMN:
+				var new_width: int = _resized_column_width - (_drag_from.x - _drag_to.x)
+				set_column_custom_width(_resized_column, new_width)
 
 		queue_redraw()
 
@@ -427,6 +454,10 @@ func _gui_input(event: InputEvent) -> void:
 		const SCROLL_FACTOR = 0.25
 
 		match event.get_button_index():
+			MOUSE_BUTTON_LEFT when event.is_released():
+				_resized_column = INVALID_COLUMN
+				_drag_from = Vector2.ZERO
+
 			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT:
 				if is_instance_valid(_cell_editor):
 					_cell_editor.queue_free()
@@ -622,7 +653,7 @@ func update_table() -> void:
 
 				rect.position.x += rect.size.x
 
-		ColumnResizeMode.FIXED:
+		ColumnResizeMode.INTERACTIVE, ColumnResizeMode.FIXED:
 			var ofx_x: int = drawable_rect.position.x
 			var ofx_y: int = drawable_rect.position.y
 
