@@ -57,7 +57,7 @@ enum DrawMode {
 }
 enum ColumnResizeMode {
 	STRETCH,
-#	INTERACTIVE,
+	INTERACTIVE,
 	FIXED,
 #	RESIZE_TO_CONTENTS,
 }
@@ -107,6 +107,12 @@ var _canvas: RID = RID()
 
 var _cell_editor: Node = null
 var _column_context_menu: PopupMenu = null
+
+var _resized_column: int = INVALID_COLUMN
+var _resized_column_width: int = 0
+
+var _drag_from: Vector2 = Vector2.ZERO
+var _drag_to: Vector2 = Vector2.ZERO
 
 #region theme cache
 var _inner_margin_left: float = 0
@@ -232,9 +238,10 @@ func _notification(what: int) -> void:
 				if not drawable_rect.intersects(rect):
 					continue
 
-				rect = margin_rect(rect)
-				draw_rect(rect, Color(column.color, 0.5))
-				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, rect)
+				draw_rect(margin_rect(rect), Color(column.color, 0.5))
+				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, margin_rect(rect))
+
+				draw_rect(grip_rect(rect), Color(Color.BLUE, 0.5))
 
 		NOTIFICATION_DRAW:
 			if is_dirty():
@@ -359,66 +366,110 @@ func _notification(what: int) -> void:
 		NOTIFICATION_EXIT_CANVAS:
 			RenderingServer.free_rid(_canvas)
 
+
+func _handle_column_event(event: InputEventMouseButton, position: Vector2) -> void:
+	position = scrolled_position_horizontal(position)
+
+	var column_idx := find_column_at_position(position)
+	if column_idx == INVALID_COLUMN:
+		return
+
+	if event.get_button_index() == MOUSE_BUTTON_LEFT:
+		if event.is_double_click():
+			column_double_clicked.emit(column_idx)
+
+		elif grip_rect(get_column_rect(column_idx)).has_point(position):
+			_columns[column_idx][&"draw_mode"] = DrawMode.HOVER
+
+			_resized_column = column_idx
+			_resized_column_width = get_column_width(column_idx)
+
+			_drag_from = position
+		else:
+			column_clicked.emit(column_idx)
+	else:
+		column_rmb_clicked.emit(column_idx)
+
+func _handle_left_mouse_row_event(event: InputEventMouseButton, row_idx: int) -> void:
+	if event.is_ctrl_pressed():
+		toggle_row_selected(row_idx)
+	elif event.is_shift_pressed():
+		select_row(row_idx)
+	elif event.is_double_click():
+		row_double_clicked.emit(row_idx)
+	else:
+		select_single_row(row_idx)
+
+func _handle_cell_event(event: InputEventMouseButton, row_idx: int, position: Vector2) -> void:
+	var cell_idx := find_cell_at_position(row_idx, scrolled_position(position))
+	if cell_idx == INVALID_CELL:
+		return
+
+	if event.get_button_index() == MOUSE_BUTTON_LEFT:
+		if event.is_double_click():
+			cell_double_clicked.emit(row_idx, cell_idx)
+		else:
+			cell_clicked.emit(row_idx, cell_idx)
+	else:
+		cell_rmb_clicked.emit(row_idx, cell_idx)
+
+func _handle_row_event(event: InputEventMouseButton, position: Vector2) -> void:
+	var row_idx := find_row_at_position(scrolled_position(position))
+	if row_idx == INVALID_ROW:
+		return
+
+	if event.get_button_index() == MOUSE_BUTTON_LEFT:
+		_handle_left_mouse_row_event(event, row_idx)
+	else:
+		row_rmb_clicked.emit(row_idx)
+
+	_handle_cell_event(event, row_idx, position)
+
 @warning_ignore("unsafe_method_access", "unsafe_call_argument", "return_value_discarded")
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
-		for column: Dictionary in _columns:
-			if not column.visible:
-				continue
-			elif scrolled_rect_horizontal(column.rect).has_point(event.get_position()):
-				column.draw_mode = DrawMode.HOVER
-			else:
-				column.draw_mode = DrawMode.NORMAL
+		var position: Vector2 = event.get_position()
+		_drag_to = scrolled_position(position)
+
+		if _resized_column == INVALID_COLUMN:
+			for column in _columns:
+				if not column.visible:
+					continue
+
+				var column_rect = scrolled_rect_horizontal(column.rect).grow_side(SIDE_LEFT, -2)
+				column.draw_mode = DrawMode.HOVER if column_rect.has_point(position) else DrawMode.NORMAL
+
+		# Handle interactive column resizing mode
+		if column_resize_mode == ColumnResizeMode.INTERACTIVE:
+			var is_resizing: bool = _resized_column != INVALID_COLUMN or find_resizable_column(_drag_to) != INVALID_COLUMN
+			set_default_cursor_shape(CURSOR_HSIZE if is_resizing else CURSOR_ARROW)
+
+			if _resized_column != INVALID_COLUMN:
+				var new_width: int = _resized_column_width - (_drag_from.x - _drag_to.x)
+				set_column_custom_width(_resized_column, new_width)
 
 		queue_redraw()
 
-	elif event is InputEventMouseButton and event.is_pressed():
+	elif event is InputEventMouseButton:
 		const SCROLL_FACTOR = 0.25
 
 		match event.get_button_index():
+			MOUSE_BUTTON_LEFT when event.is_released():
+				_resized_column = INVALID_COLUMN
+				_drag_from = Vector2.ZERO
+
 			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT:
 				if is_instance_valid(_cell_editor):
 					_cell_editor.queue_free()
 
 				if is_select_mode_disabled():
 					return
-				elif header_has_point(event.get_position()):
-					var column_idx := find_column_at_position(scrolled_position_horizontal(event.get_position()))
-					if column_idx == INVALID_COLUMN:
-						return
-					elif event.get_button_index() == MOUSE_BUTTON_LEFT:
-						if event.is_double_click():
-							column_double_clicked.emit(column_idx)
-						else:
-							column_clicked.emit(column_idx)
-					else:
-						column_rmb_clicked.emit(column_idx)
-				else:
-					var row_idx := find_row_at_position(scrolled_position(event.get_position()))
-					if row_idx == INVALID_ROW:
-						return
-					elif event.get_button_index() == MOUSE_BUTTON_LEFT:
-						if event.is_ctrl_pressed():
-							toggle_row_selected(row_idx)
-						elif event.is_shift_pressed():
-							select_row(row_idx)
-						elif event.is_double_click():
-							row_double_clicked.emit(row_idx)
-						else:
-							select_single_row(row_idx)
-					else:
-						row_rmb_clicked.emit(row_idx)
 
-					var cell_idx := find_cell_at_position(row_idx, scrolled_position(event.get_position()))
-					if cell_idx == INVALID_CELL:
-						return
-					elif event.get_button_index() == MOUSE_BUTTON_LEFT:
-						if event.is_double_click():
-							cell_double_clicked.emit(row_idx, cell_idx)
-						else:
-							cell_clicked.emit(row_idx, cell_idx)
-					else:
-						cell_rmb_clicked.emit(row_idx, cell_idx)
+				var position: Vector2 = event.get_position()
+				if header_has_point(position):
+					_handle_column_event(event, position)
+				else:
+					_handle_row_event(event, position)
 
 			MOUSE_BUTTON_WHEEL_DOWN:
 				if event.is_shift_pressed():
@@ -602,7 +653,7 @@ func update_table() -> void:
 
 				rect.position.x += rect.size.x
 
-		ColumnResizeMode.FIXED:
+		ColumnResizeMode.INTERACTIVE, ColumnResizeMode.FIXED:
 			var ofx_x: int = drawable_rect.position.x
 			var ofx_y: int = drawable_rect.position.y
 
@@ -1244,6 +1295,10 @@ func set_column_metadata(column_idx: int, metadata: Variant) -> void:
 func get_column_metadata(column_idx: int, default: Variant = null) -> Variant:
 	return _columns[column_idx].get(&"metadata", default)
 
+## Returns the column header's rectangle.
+func get_column_rect(column_idx: int) -> Rect2:
+	return _columns[column_idx][&"rect"]
+
 
 func get_column_sort_mode(column_idx: int) -> SortMode:
 	return _columns[column_idx][&"sort_mode"]
@@ -1611,6 +1666,32 @@ func find_column_at_position(point: Vector2) -> int:
 			return i
 
 	return INVALID_COLUMN
+
+
+func grip_rect(rect: Rect2) -> Rect2:
+	const GRIP_SIZE = 6
+
+	return Rect2(
+		rect.position.x + rect.size.x - GRIP_SIZE,
+		rect.position.y,
+		GRIP_SIZE * 2,
+		rect.size.y,
+	)
+
+func find_resizable_column(point: Vector2) -> int:
+	if not _header.has_point(point):
+		return INVALID_COLUMN
+
+	for i: int in _columns.size():
+		if not _columns[i][&"visible"]:
+			continue
+
+		var rect := scrolled_rect_horizontal(_columns[i][&"rect"])
+		if grip_rect(rect).has_point(point):
+			return i
+
+	return INVALID_COLUMN
+
 
 func find_row_at_position(point: Vector2) -> int:
 	for i: int in _rows.size():
