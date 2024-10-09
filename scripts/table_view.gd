@@ -1264,6 +1264,10 @@ func set_column_metadata(column_idx: int, metadata: Variant) -> void:
 func get_column_metadata(column_idx: int, default: Variant = null) -> Variant:
 	return _columns[column_idx].get(&"metadata", default)
 
+## Returns the column header's rectangle.
+func get_column_rect(column_idx: int) -> Rect2:
+	return _columns[column_idx][&"rect"]
+
 
 func get_column_sort_mode(column_idx: int) -> SortMode:
 	return _columns[column_idx][&"sort_mode"]
