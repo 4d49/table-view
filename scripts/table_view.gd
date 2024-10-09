@@ -83,6 +83,9 @@ const INVALID_COLUMN: int = -1
 const INVALID_ROW: int = -1
 const INVALID_CELL: int = -1
 
+# TODO: Move to theme in the future.
+const H_SEPARATION = 4
+
 
 @export var column_resize_mode: ColumnResizeMode = ColumnResizeMode.STRETCH
 @export var select_mode: SelectMode = SelectMode.SINGLE_ROW:
@@ -588,16 +591,10 @@ func get_sort_mode_icon(sort_mode: SortMode) -> Texture2D:
 	return null
 
 func calculate_column_rect(text_size: Vector2i, texture: Texture2D) -> Rect2i:
-	const H_SEPARATION = 4
-
 	var rect := Rect2i(Vector2i.ZERO, text_size)
 	if is_instance_valid(texture):
-		return rect.merge(Rect2i(
-				rect.position.x + rect.size.x + H_SEPARATION,
-				rect.position.y + rect.size.y / 2 - texture.get_height() / 2,
-				texture.get_width(), texture.get_height()
-			)
-		)
+		rect.size.x += H_SEPARATION + texture.get_width()
+		rect.size.y = maxi(rect.size.y, texture.get_height())
 
 	return rect
 
