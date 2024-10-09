@@ -360,6 +360,56 @@ func _notification(what: int) -> void:
 		NOTIFICATION_EXIT_CANVAS:
 			RenderingServer.free_rid(_canvas)
 
+
+func _handle_column_event(event: InputEventMouseButton, position: Vector2) -> void:
+	var column_idx := find_column_at_position(scrolled_position_horizontal(position))
+	if column_idx == INVALID_COLUMN:
+		return
+
+	if event.get_button_index() == MOUSE_BUTTON_LEFT:
+		if event.is_double_click():
+			column_double_clicked.emit(column_idx)
+		else:
+			column_clicked.emit(column_idx)
+	else:
+		column_rmb_clicked.emit(column_idx)
+
+
+func _handle_left_mouse_row_event(event: InputEventMouseButton, row_idx: int) -> void:
+	if event.is_ctrl_pressed():
+		toggle_row_selected(row_idx)
+	elif event.is_shift_pressed():
+		select_row(row_idx)
+	elif event.is_double_click():
+		row_double_clicked.emit(row_idx)
+	else:
+		select_single_row(row_idx)
+
+func _handle_cell_event(event: InputEventMouseButton, row_idx: int, position: Vector2) -> void:
+	var cell_idx := find_cell_at_position(row_idx, scrolled_position(position))
+	if cell_idx == INVALID_CELL:
+		return
+
+	if event.get_button_index() == MOUSE_BUTTON_LEFT:
+		if event.is_double_click():
+			cell_double_clicked.emit(row_idx, cell_idx)
+		else:
+			cell_clicked.emit(row_idx, cell_idx)
+	else:
+		cell_rmb_clicked.emit(row_idx, cell_idx)
+
+func _handle_row_event(event: InputEventMouseButton, position: Vector2) -> void:
+	var row_idx := find_row_at_position(scrolled_position(position))
+	if row_idx == INVALID_ROW:
+		return
+
+	if event.get_button_index() == MOUSE_BUTTON_LEFT:
+		_handle_left_mouse_row_event(event, row_idx)
+	else:
+		row_rmb_clicked.emit(row_idx)
+
+	_handle_cell_event(event, row_idx, position)
+
 @warning_ignore("unsafe_method_access", "unsafe_call_argument", "return_value_discarded")
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
@@ -373,7 +423,7 @@ func _gui_input(event: InputEvent) -> void:
 
 		queue_redraw()
 
-	elif event is InputEventMouseButton and event.is_pressed():
+	elif event is InputEventMouseButton:
 		const SCROLL_FACTOR = 0.25
 
 		match event.get_button_index():
@@ -383,43 +433,12 @@ func _gui_input(event: InputEvent) -> void:
 
 				if is_select_mode_disabled():
 					return
-				elif header_has_point(event.get_position()):
-					var column_idx := find_column_at_position(scrolled_position_horizontal(event.get_position()))
-					if column_idx == INVALID_COLUMN:
-						return
-					elif event.get_button_index() == MOUSE_BUTTON_LEFT:
-						if event.is_double_click():
-							column_double_clicked.emit(column_idx)
-						else:
-							column_clicked.emit(column_idx)
-					else:
-						column_rmb_clicked.emit(column_idx)
-				else:
-					var row_idx := find_row_at_position(scrolled_position(event.get_position()))
-					if row_idx == INVALID_ROW:
-						return
-					elif event.get_button_index() == MOUSE_BUTTON_LEFT:
-						if event.is_ctrl_pressed():
-							toggle_row_selected(row_idx)
-						elif event.is_shift_pressed():
-							select_row(row_idx)
-						elif event.is_double_click():
-							row_double_clicked.emit(row_idx)
-						else:
-							select_single_row(row_idx)
-					else:
-						row_rmb_clicked.emit(row_idx)
 
-					var cell_idx := find_cell_at_position(row_idx, scrolled_position(event.get_position()))
-					if cell_idx == INVALID_CELL:
-						return
-					elif event.get_button_index() == MOUSE_BUTTON_LEFT:
-						if event.is_double_click():
-							cell_double_clicked.emit(row_idx, cell_idx)
-						else:
-							cell_clicked.emit(row_idx, cell_idx)
-					else:
-						cell_rmb_clicked.emit(row_idx, cell_idx)
+				var position: Vector2 = event.get_position()
+				if header_has_point(position):
+					_handle_column_event(event, position)
+				else:
+					_handle_row_event(event, position)
 
 			MOUSE_BUTTON_WHEEL_DOWN:
 				if event.is_shift_pressed():
