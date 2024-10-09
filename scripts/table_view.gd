@@ -1612,6 +1612,17 @@ func find_column_at_position(point: Vector2) -> int:
 
 	return INVALID_COLUMN
 
+
+func grip_rect(rect: Rect2) -> Rect2:
+	const GRIP_SIZE = 6
+
+	return Rect2(
+		rect.position.x + rect.size.x - GRIP_SIZE,
+		rect.position.y,
+		GRIP_SIZE * 2,
+		rect.size.y,
+	)
+
 func find_row_at_position(point: Vector2) -> int:
 	for i: int in _rows.size():
 		var row: Dictionary = _rows[i]
