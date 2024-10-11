@@ -380,8 +380,7 @@ func _handle_column_event(event: InputEventMouseButton, position: Vector2) -> vo
 	if event.get_button_index() == MOUSE_BUTTON_LEFT:
 		if event.is_double_click():
 			column_double_clicked.emit(column_idx)
-
-		elif grip_rect(get_column_rect(column_idx)).has_point(position):
+		elif get_column_grip_rect(column_idx).has_point(position):
 			_columns[column_idx][&"draw_mode"] = DrawMode.HOVER
 
 			_resized_column = column_idx
@@ -1295,6 +1294,9 @@ func get_column_metadata(column_idx: int, default: Variant = null) -> Variant:
 ## Returns the column header's rectangle.
 func get_column_rect(column_idx: int) -> Rect2:
 	return _columns[column_idx][&"rect"]
+
+func get_column_grip_rect(column_idx: int) -> Rect2:
+	return grip_rect(_columns[column_idx][&"rect"])
 
 
 func get_column_sort_mode(column_idx: int) -> SortMode:
