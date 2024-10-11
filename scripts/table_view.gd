@@ -196,13 +196,16 @@ func _notification(what: int) -> void:
 
 			draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.BLACK, 0.5))
 			if has_focus():
-				draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.RED, 0.5), false, 2.0)
+				draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.RED, 0.5), false)
 
-			draw_rect(_header, Color(Color.RED, 0.5))
+			draw_rect(_header, Color(Color.RED, 0.25))
+			draw_rect(_header, Color(Color.RED, 0.50), false)
 
 			var drawable_rect: Rect2 = get_drawable_rect()
-			draw_rect(drawable_rect, Color(Color.GREEN, 0.25))
+			draw_rect(drawable_rect, Color(Color.GREEN, 0.05))
+			draw_rect(drawable_rect, Color(Color.GREEN, 0.10), false)
 
+			#region draw rows
 			for row: Dictionary in _rows:
 				if not row.visible:
 					continue
@@ -211,10 +214,14 @@ func _notification(what: int) -> void:
 				if not drawable_rect.intersects(rect):
 					continue
 
+				var color: Color = row.color
 				if row.selected:
-					draw_rect(rect, Color(Color.WHITE.lerp(row.color, 0.25), 0.5))
-				else:
-					draw_rect(rect, Color(row.color, 0.5))
+					color = color.lerp(Color.WHITE, 0.5)
+				if rect.has_point(get_local_mouse_position()):
+					color = color.lerp(Color.WHITE, 0.5)
+
+				draw_rect(rect, Color(color, 0.25))
+				draw_rect(rect, Color(color, 0.50), false)
 
 				for cell: Dictionary in row.cells:
 					rect = scrolled_rect(cell.rect)
@@ -222,17 +229,25 @@ func _notification(what: int) -> void:
 						continue
 
 					rect = margin_rect(rect)
-					draw_rect(rect, Color(cell.color, 0.25))
+
+					color = cell.color
+					if rect.has_point(get_local_mouse_position()):
+						color = color.lerp(Color.WHITE, 0.5)
+
+					draw_rect(rect, Color(color, 0.25))
+					draw_rect(rect, Color(color, 0.50), false)
 
 					match cell.type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
 							texture.draw(get_canvas_item(), get_texture_position_in_rect(texture.get_size(), rect, HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
-							draw_rect(margin_rect(rect), cell.value)
+							draw_rect(rect, cell.value)
 						_:
 							draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
+			#endregion
 
+			#region draw columns
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
@@ -241,10 +256,39 @@ func _notification(what: int) -> void:
 				if not drawable_rect.intersects(rect):
 					continue
 
-				draw_rect(margin_rect(rect), Color(column.color, 0.5))
-				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, margin_rect(rect))
+				var color: Color = column.color
+				if column.draw_mode == DrawMode.HOVER:
+					color = color.lerp(Color.WHITE, 0.5)
 
-				draw_rect(grip_rect(rect), Color(Color.BLUE, 0.5))
+				rect = margin_rect(rect)
+				draw_rect(rect, Color(color, 0.5))
+				draw_rect(rect, Color(color, 0.75), false)
+
+				var icon := get_sort_mode_icon(column.sort_mode)
+				if is_instance_valid(icon):
+					icon.draw(get_canvas_item(), get_texture_position_in_rect(icon.get_size(), rect, HORIZONTAL_ALIGNMENT_RIGHT))
+
+				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, margin_rect(rect))
+			#endregion
+
+			#region draw grip
+			for column: Dictionary in _columns:
+				if not column.visible:
+					continue
+
+				var rect := scrolled_rect_horizontal(column.rect)
+				if not drawable_rect.intersects(rect):
+					continue
+
+				rect = grip_rect(rect)
+
+				var color: Color = Color.BLUE
+				if rect.has_point(get_local_mouse_position()):
+					color = color.lerp(Color.WHITE, 0.5)
+
+				draw_rect(rect, Color(color, 0.5))
+				draw_rect(rect, Color(color, 0.75), false)
+			#endregion
 
 		NOTIFICATION_DRAW:
 			if is_dirty():
