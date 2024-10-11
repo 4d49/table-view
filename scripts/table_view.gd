@@ -443,7 +443,9 @@ func _gui_input(event: InputEvent) -> void:
 
 		# Handle interactive column resizing mode
 		if column_resize_mode == ColumnResizeMode.INTERACTIVE:
-			var is_resizing: bool = _resized_column != INVALID_COLUMN or find_resizable_column(_drag_to) != INVALID_COLUMN
+			position = scrolled_position_horizontal(position)
+
+			var is_resizing: bool = _resized_column != INVALID_COLUMN or find_resizable_column(position) != INVALID_COLUMN
 			set_default_cursor_shape(CURSOR_HSIZE if is_resizing else CURSOR_ARROW)
 
 			if _resized_column != INVALID_COLUMN:
