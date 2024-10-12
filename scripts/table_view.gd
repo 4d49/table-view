@@ -83,6 +83,9 @@ const INVALID_COLUMN: int = -1
 const INVALID_ROW: int = -1
 const INVALID_CELL: int = -1
 
+# TODO: Move to theme in the future.
+const H_SEPARATION = 4
+
 
 @export var column_resize_mode: ColumnResizeMode = ColumnResizeMode.STRETCH
 @export var select_mode: SelectMode = SelectMode.SINGLE_ROW:
@@ -193,13 +196,16 @@ func _notification(what: int) -> void:
 
 			draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.BLACK, 0.5))
 			if has_focus():
-				draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.RED, 0.5), false, 2.0)
+				draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.RED, 0.5), false)
 
-			draw_rect(_header, Color(Color.RED, 0.5))
+			draw_rect(_header, Color(Color.RED, 0.25))
+			draw_rect(_header, Color(Color.RED, 0.50), false)
 
 			var drawable_rect: Rect2 = get_drawable_rect()
-			draw_rect(drawable_rect, Color(Color.GREEN, 0.25))
+			draw_rect(drawable_rect, Color(Color.GREEN, 0.05))
+			draw_rect(drawable_rect, Color(Color.GREEN, 0.10), false)
 
+			#region draw rows
 			for row: Dictionary in _rows:
 				if not row.visible:
 					continue
@@ -208,10 +214,14 @@ func _notification(what: int) -> void:
 				if not drawable_rect.intersects(rect):
 					continue
 
+				var color: Color = row.color
 				if row.selected:
-					draw_rect(rect, Color(Color.WHITE.lerp(row.color, 0.25), 0.5))
-				else:
-					draw_rect(rect, Color(row.color, 0.5))
+					color = color.lerp(Color.WHITE, 0.5)
+				if rect.has_point(get_local_mouse_position()):
+					color = color.lerp(Color.WHITE, 0.5)
+
+				draw_rect(rect, Color(color, 0.25))
+				draw_rect(rect, Color(color, 0.50), false)
 
 				for cell: Dictionary in row.cells:
 					rect = scrolled_rect(cell.rect)
@@ -219,17 +229,25 @@ func _notification(what: int) -> void:
 						continue
 
 					rect = margin_rect(rect)
-					draw_rect(rect, Color(cell.color, 0.25))
+
+					color = cell.color
+					if rect.has_point(get_local_mouse_position()):
+						color = color.lerp(Color.WHITE, 0.5)
+
+					draw_rect(rect, Color(color, 0.25))
+					draw_rect(rect, Color(color, 0.50), false)
 
 					match cell.type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
 							texture.draw(get_canvas_item(), get_texture_position_in_rect(texture.get_size(), rect, HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
-							draw_rect(margin_rect(rect), cell.value)
+							draw_rect(rect, cell.value)
 						_:
 							draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
+			#endregion
 
+			#region draw columns
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
@@ -238,10 +256,39 @@ func _notification(what: int) -> void:
 				if not drawable_rect.intersects(rect):
 					continue
 
-				draw_rect(margin_rect(rect), Color(column.color, 0.5))
-				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, margin_rect(rect))
+				var color: Color = column.color
+				if column.draw_mode == DrawMode.HOVER:
+					color = color.lerp(Color.WHITE, 0.5)
 
-				draw_rect(grip_rect(rect), Color(Color.BLUE, 0.5))
+				rect = margin_rect(rect)
+				draw_rect(rect, Color(color, 0.5))
+				draw_rect(rect, Color(color, 0.75), false)
+
+				var icon := get_sort_mode_icon(column.sort_mode)
+				if is_instance_valid(icon):
+					icon.draw(get_canvas_item(), get_texture_position_in_rect(icon.get_size(), rect, HORIZONTAL_ALIGNMENT_RIGHT))
+
+				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, margin_rect(rect))
+			#endregion
+
+			#region draw grip
+			for column: Dictionary in _columns:
+				if not column.visible:
+					continue
+
+				var rect := scrolled_rect_horizontal(column.rect)
+				if not drawable_rect.intersects(rect):
+					continue
+
+				rect = grip_rect(rect)
+
+				var color: Color = Color.BLUE
+				if rect.has_point(get_local_mouse_position()):
+					color = color.lerp(Color.WHITE, 0.5)
+
+				draw_rect(rect, Color(color, 0.5))
+				draw_rect(rect, Color(color, 0.75), false)
+			#endregion
 
 		NOTIFICATION_DRAW:
 			if is_dirty():
@@ -319,11 +366,13 @@ func _notification(what: int) -> void:
 					DrawMode.PRESSED:
 						_column_pressed.draw(_canvas, rect)
 
+				rect = margin_rect(rect)
+
 				var icon := get_sort_mode_icon(column.sort_mode)
 				if is_instance_valid(icon):
-					icon.draw(_canvas, get_texture_position_in_rect(icon.get_size(), margin_rect(rect), HORIZONTAL_ALIGNMENT_RIGHT))
+					icon.draw(_canvas, get_texture_position_in_rect(icon.get_size(), rect, HORIZONTAL_ALIGNMENT_RIGHT))
 
-				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
+				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, rect)
 
 		NOTIFICATION_THEME_CHANGED:
 			_inner_margin_left = get_theme_constant(&"inner_margin_left", &"TableView")
@@ -377,8 +426,7 @@ func _handle_column_event(event: InputEventMouseButton, position: Vector2) -> vo
 	if event.get_button_index() == MOUSE_BUTTON_LEFT:
 		if event.is_double_click():
 			column_double_clicked.emit(column_idx)
-
-		elif grip_rect(get_column_rect(column_idx)).has_point(position):
+		elif get_column_grip_rect(column_idx).has_point(position):
 			_columns[column_idx][&"draw_mode"] = DrawMode.HOVER
 
 			_resized_column = column_idx
@@ -441,7 +489,9 @@ func _gui_input(event: InputEvent) -> void:
 
 		# Handle interactive column resizing mode
 		if column_resize_mode == ColumnResizeMode.INTERACTIVE:
-			var is_resizing: bool = _resized_column != INVALID_COLUMN or find_resizable_column(_drag_to) != INVALID_COLUMN
+			position = scrolled_position_horizontal(position)
+
+			var is_resizing: bool = _resized_column != INVALID_COLUMN or find_resizable_column(position) != INVALID_COLUMN
 			set_default_cursor_shape(CURSOR_HSIZE if is_resizing else CURSOR_ARROW)
 
 			if _resized_column != INVALID_COLUMN:
@@ -587,91 +637,81 @@ func get_sort_mode_icon(sort_mode: SortMode) -> Texture2D:
 
 	return null
 
-func calculate_column_rect(text_size: Vector2i, texture: Texture2D) -> Rect2i:
-	const H_SEPARATION = 4
 
-	var rect := Rect2i(Vector2i.ZERO, text_size)
-	if is_instance_valid(texture):
-		return rect.merge(Rect2i(
-				rect.position.x + rect.size.x + H_SEPARATION,
-				rect.position.y + rect.size.y / 2 - texture.get_height() / 2,
-				texture.get_width(), texture.get_height()
-			)
-		)
+func update_column_text_line(text_line: TextLine, icon: Texture2D, rect: Rect2) -> void:
+	rect = margin_rect(rect)
 
-	return rect
+	if not is_instance_valid(icon):
+		text_line.set_width(rect.size.x)
+		return
+
+	var text_width: float = text_line.get_line_width()
+	var icon_width: float = icon.get_width()
+
+	var offset_x: float = rect.size.x - text_width - icon_width * 2.0
+
+	if offset_x < 0.0:
+		text_width = text_width + offset_x + icon_width
+	else:
+		text_width = rect.size.x
+
+	text_line.set_width(text_width)
 
 @warning_ignore("unsafe_call_argument", "return_value_discarded", "narrowing_conversion")
 func update_table() -> void:
 	if _columns.is_empty():
 		return
 
-	#region update column text
-	for column: Dictionary in _columns:
-		if not column.visible:
-			continue
-
-		var text_line: TextLine = column.text_line
-		text_line.set_width(0.0)
-
-		column.rect = calculate_column_rect(text_line.get_size(), get_sort_mode_icon(column.sort_mode))
-	#endregion
-
 	var cell_height: int = _font.get_height(_font_size) + _inner_margin_top + _inner_margin_bottom
 	var drawable_rect := get_drawable_rect()
 
 	match column_resize_mode:
 		ColumnResizeMode.STRETCH:
-			var min_size := _column_normal.get_minimum_size()
+			var total_width: float = 0.0
 
-			var count_visible_columns: int = 0
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
 
-				min_size = min_size.max(column.rect.size)
-				count_visible_columns += 1
+				total_width += column.minimum_width
 
 			var ofs_x: int = drawable_rect.position.x
 			var ofs_y: int = drawable_rect.position.y
 
-			count_visible_columns = maxi(1, count_visible_columns)
-
-			var rect := Rect2i(ofs_x, ofs_y, maxi(min_size.x + _inner_margin_left + _inner_margin_right, drawable_rect.size.x / count_visible_columns), cell_height)
-			_header.position = rect.position
+			_header.position = Vector2i(ofs_x, ofs_y)
 
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
 
+				var ratio: float = column.minimum_width / total_width
+				var width: float = maxf(ratio * drawable_rect.size.x, column.minimum_width)
+
+				var rect := Rect2i(ofs_x, ofs_y, width, cell_height)
+				update_column_text_line(column.text_line, get_sort_mode_icon(column.sort_mode), rect)
+
 				column.rect = rect
-
-				var text_line: TextLine = column.text_line
-				text_line.set_width(margin_width(rect.size.x))
-
 				_header.end = rect.end
 
-				rect.position.x += rect.size.x
+				ofs_x = rect.end.x
 
 		ColumnResizeMode.INTERACTIVE, ColumnResizeMode.FIXED:
-			var ofx_x: int = drawable_rect.position.x
-			var ofx_y: int = drawable_rect.position.y
+			var ofs_x: int = drawable_rect.position.x
+			var ofs_y: int = drawable_rect.position.y
 
-			_header.position = Vector2i(ofx_x, ofx_y)
+			_header.position = Vector2i(ofs_x, ofs_y)
 
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
 
-				var rect := Rect2i(ofx_x, ofx_y, maxi(column.custom_width, column.minimum_width), cell_height)
-
-				var text_line: TextLine = column.text_line
-				text_line.set_width(margin_width(rect.size.x))
+				var rect := Rect2i(ofs_x, ofs_y, maxi(column.custom_width, column.minimum_width), cell_height)
+				update_column_text_line(column.text_line, get_sort_mode_icon(column.sort_mode), rect)
 
 				column.rect = rect
 				_header.end = rect.end
 
-				ofx_x = rect.end.x
+				ofs_x = rect.end.x
 
 	var content_rect: Rect2i = _header
 
@@ -1298,6 +1338,9 @@ func get_column_metadata(column_idx: int, default: Variant = null) -> Variant:
 ## Returns the column header's rectangle.
 func get_column_rect(column_idx: int) -> Rect2:
 	return _columns[column_idx][&"rect"]
+
+func get_column_grip_rect(column_idx: int) -> Rect2:
+	return grip_rect(_columns[column_idx][&"rect"])
 
 
 func get_column_sort_mode(column_idx: int) -> SortMode:
