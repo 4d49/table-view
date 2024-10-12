@@ -87,7 +87,9 @@ const INVALID_CELL: int = -1
 const H_SEPARATION = 4
 
 
-@export var column_resize_mode: ColumnResizeMode = ColumnResizeMode.STRETCH
+@export var column_resize_mode: ColumnResizeMode = ColumnResizeMode.STRETCH:
+	set = set_column_resize_mode,
+	get = get_column_resize_mode
 @export var select_mode: SelectMode = SelectMode.SINGLE_ROW:
 	set = set_select_mode,
 	get = get_select_mode
@@ -579,6 +581,17 @@ func mark_dirty() -> void:
 
 func is_dirty() -> bool:
 	return _dirty
+
+
+func set_column_resize_mode(n_resize_mode: ColumnResizeMode) -> void:
+	if column_resize_mode == n_resize_mode:
+		return
+
+	column_resize_mode = n_resize_mode
+	mark_dirty()
+
+func get_column_resize_mode() -> ColumnResizeMode:
+	return column_resize_mode
 
 
 func set_select_mode(n_select_mode: SelectMode) -> void:
