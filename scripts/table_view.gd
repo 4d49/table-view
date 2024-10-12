@@ -366,11 +366,13 @@ func _notification(what: int) -> void:
 					DrawMode.PRESSED:
 						_column_pressed.draw(_canvas, rect)
 
+				rect = margin_rect(rect)
+
 				var icon := get_sort_mode_icon(column.sort_mode)
 				if is_instance_valid(icon):
-					icon.draw(_canvas, get_texture_position_in_rect(icon.get_size(), margin_rect(rect), HORIZONTAL_ALIGNMENT_RIGHT))
+					icon.draw(_canvas, get_texture_position_in_rect(icon.get_size(), rect, HORIZONTAL_ALIGNMENT_RIGHT))
 
-				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
+				draw_text_line(_canvas, column.text_line, _font_color, _font_outline_size, _font_outline_color, rect)
 
 		NOTIFICATION_THEME_CHANGED:
 			_inner_margin_left = get_theme_constant(&"inner_margin_left", &"TableView")
@@ -635,85 +637,81 @@ func get_sort_mode_icon(sort_mode: SortMode) -> Texture2D:
 
 	return null
 
-func calculate_column_rect(text_size: Vector2i, texture: Texture2D) -> Rect2i:
-	var rect := Rect2i(Vector2i.ZERO, text_size)
-	if is_instance_valid(texture):
-		rect.size.x += H_SEPARATION + texture.get_width()
-		rect.size.y = maxi(rect.size.y, texture.get_height())
 
-	return rect
+func update_column_text_line(text_line: TextLine, icon: Texture2D, rect: Rect2) -> void:
+	rect = margin_rect(rect)
+
+	if not is_instance_valid(icon):
+		text_line.set_width(rect.size.x)
+		return
+
+	var text_width: float = text_line.get_line_width()
+	var icon_width: float = icon.get_width()
+
+	var offset_x: float = rect.size.x - text_width - icon_width * 2.0
+
+	if offset_x < 0.0:
+		text_width = text_width + offset_x + icon_width
+	else:
+		text_width = rect.size.x
+
+	text_line.set_width(text_width)
 
 @warning_ignore("unsafe_call_argument", "return_value_discarded", "narrowing_conversion")
 func update_table() -> void:
 	if _columns.is_empty():
 		return
 
-	#region update column text
-	for column: Dictionary in _columns:
-		if not column.visible:
-			continue
-
-		var text_line: TextLine = column.text_line
-		text_line.set_width(0.0)
-
-		column.rect = calculate_column_rect(text_line.get_size(), get_sort_mode_icon(column.sort_mode))
-	#endregion
-
 	var cell_height: int = _font.get_height(_font_size) + _inner_margin_top + _inner_margin_bottom
 	var drawable_rect := get_drawable_rect()
 
 	match column_resize_mode:
 		ColumnResizeMode.STRETCH:
-			var min_size := _column_normal.get_minimum_size()
+			var total_width: float = 0.0
 
-			var count_visible_columns: int = 0
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
 
-				min_size = min_size.max(column.rect.size)
-				count_visible_columns += 1
+				total_width += column.minimum_width
 
 			var ofs_x: int = drawable_rect.position.x
 			var ofs_y: int = drawable_rect.position.y
 
-			count_visible_columns = maxi(1, count_visible_columns)
-
-			var rect := Rect2i(ofs_x, ofs_y, maxi(min_size.x + _inner_margin_left + _inner_margin_right, drawable_rect.size.x / count_visible_columns), cell_height)
-			_header.position = rect.position
+			_header.position = Vector2i(ofs_x, ofs_y)
 
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
 
+				var ratio: float = column.minimum_width / total_width
+				var width: float = maxf(ratio * drawable_rect.size.x, column.minimum_width)
+
+				var rect := Rect2i(ofs_x, ofs_y, width, cell_height)
+				update_column_text_line(column.text_line, get_sort_mode_icon(column.sort_mode), rect)
+
 				column.rect = rect
-
-				var text_line: TextLine = column.text_line
-				text_line.set_width(margin_width(rect.size.x))
-
 				_header.end = rect.end
 
-				rect.position.x += rect.size.x
+				ofs_x = rect.end.x
 
 		ColumnResizeMode.INTERACTIVE, ColumnResizeMode.FIXED:
-			var ofx_x: int = drawable_rect.position.x
-			var ofx_y: int = drawable_rect.position.y
+			var ofs_x: int = drawable_rect.position.x
+			var ofs_y: int = drawable_rect.position.y
 
-			_header.position = Vector2i(ofx_x, ofx_y)
+			_header.position = Vector2i(ofs_x, ofs_y)
 
 			for column: Dictionary in _columns:
 				if not column.visible:
 					continue
 
-				var rect := Rect2i(ofx_x, ofx_y, maxi(column.custom_width, column.minimum_width), cell_height)
-
-				var text_line: TextLine = column.text_line
-				text_line.set_width(margin_width(rect.size.x))
+				var rect := Rect2i(ofs_x, ofs_y, maxi(column.custom_width, column.minimum_width), cell_height)
+				update_column_text_line(column.text_line, get_sort_mode_icon(column.sort_mode), rect)
 
 				column.rect = rect
 				_header.end = rect.end
 
-				ofx_x = rect.end.x
+				ofs_x = rect.end.x
 
 	var content_rect: Rect2i = _header
 
