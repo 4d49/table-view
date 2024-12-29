@@ -1,7 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://xqn36jjxpthr"]
+[gd_scene load_steps=4 format=3 uid="uid://1pwjt6un5gm4"]
 
 [ext_resource type="Theme" uid="uid://de8hd50qv2mti" path="res://addons/table-view/resources/table_view.tres" id="1_dxj5b"]
-[ext_resource type="Script" path="res://addons/table-view/scripts/table_view.gd" id="2_1kret"]
+[ext_resource type="Script" uid="uid://dc7jcdu84cn8c" path="res://addons/table-view/scripts/table_view.gd" id="2_1kret"]
 
 [sub_resource type="GDScript" id="script"]
 script/source = "# Copyright (c) 2024 Mansur Isaev and contributors - MIT License
