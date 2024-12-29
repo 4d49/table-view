@@ -1,7 +1,7 @@
 [gd_resource type="Theme" load_steps=13 format=3 uid="uid://de8hd50qv2mti"]
 
-[ext_resource type="Texture2D" uid="uid://b515sejpkrcjl" path="res://addons/table-view/icons/sort_ascending.svg" id="sort_ascending"]
-[ext_resource type="Texture2D" uid="uid://bogbcvmwpxojs" path="res://addons/table-view/icons/sort_descending.svg" id="sort_descending"]
+[ext_resource type="Texture2D" uid="uid://chpbyfbp6wcrd" path="res://addons/table-view/icons/sort_ascending.svg" id="sort_ascending"]
+[ext_resource type="Texture2D" uid="uid://dn3o1ga1gm5um" path="res://addons/table-view/icons/sort_descending.svg" id="sort_descending"]
 
 [sub_resource type="StyleBoxFlat" id="cell_edit"]
 content_margin_left = 4.0
