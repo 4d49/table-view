@@ -62,19 +62,19 @@ func _ready() -> void:
 
 	# The third argument is the type of hint.
 	# The fourth argument is a type hint string.
-	var cost := table_view.add_column(\"Cost\", TableView.Type.INT, TableView.Hint.RANGE, TableView.range_to_hint_string(COST_MIN, COST_MAX, 1))
+	var cost := table_view.add_column(\"Cost\", TableView.Type.INT, TableView.hint_range(COST_MIN, COST_MAX, 1))
 	table_view.set_column_minimum_width(cost, 75)
-	var weight := table_view.add_column(\"Weight\", TableView.Type.FLOAT, TableView.Hint.RANGE, TableView.range_to_hint_string(WEIGHT_MIN, WEIGHT_MAX, 0.1))
+	var weight := table_view.add_column(\"Weight\", TableView.Type.FLOAT, TableView.hint_range(WEIGHT_MIN, WEIGHT_MAX, 0.1))
 	table_view.set_column_minimum_width(weight, 75)
 
 	# Create an enum column type.
-	var type := table_view.add_column(\"Type\", TableView.Type.INT, TableView.Hint.ENUM, TableView.enum_to_hint_string(Type))
+	var type := table_view.add_column(\"Type\", TableView.Type.INT, TableView.hint_enum(Type))
 	table_view.set_column_minimum_width(type, 100)
 	# Create a flags column type.
-	var flags := table_view.add_column(\"Flags\", TableView.Type.INT, TableView.Hint.FLAGS, TableView.flags_to_hint_string(Flags))
+	var flags := table_view.add_column(\"Flags\", TableView.Type.INT, TableView.hint_flags(Flags))
 	table_view.set_column_minimum_width(flags, 125)
 
-	var color := table_view.add_column(\"Color\", TableView.Type.COLOR, TableView.Hint.COLOR_NO_ALPHA)
+	var color := table_view.add_column(\"Color\", TableView.Type.COLOR, TableView.hint_color_no_alpha())
 
 	# Some method returning an array with dictionaries.
 	for data: Dictionary in get_some_data():
