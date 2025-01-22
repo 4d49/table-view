@@ -37,7 +37,7 @@ Add `TableView` as a child node to the scene.
 var name = table_view.add_column("Name", TableView.Type.STRING)
 var unique = table_view.add_column("Unique", TableView.Type.BOOL)
 # The third argument defines the hint type.
-var cost = table_view.add_column("Cost", TableView.Type.INT, TableView.Hint.RANGE, TableView.range_to_hint_string(0, 1000))
+var cost = table_view.add_column("Cost", TableView.Type.INT, TableView.Hint.hint_range(0, 1000))
 ```
 
 ## Creating rows

@@ -17,7 +17,7 @@ signal cell_clicked(row_idx: int, column_idx: int)
 signal cell_rmb_clicked(row_idx: int, column_idx: int)
 signal cell_double_clicked(row_idx: int, column_idx: int)
 
-signal column_created(column_idx: int, type: Type, hint: Hint, hint_string: String)
+signal column_created(column_idx: int, type: Type, hint: Dictionary)
 signal column_removed(column_idx: int)
 signal column_visibility_changed(column_idx: int, visibility: bool)
 
@@ -75,9 +75,6 @@ enum SelectMode {
 
 const NUMBERS_AFTER_DOT = 3
 const COLUMN_MINIMUM_WIDTH = 50.0
-
-const DEFAULT_NUM_MIN = -2147483648
-const DEFAULT_NUM_MAX =  2147483647
 
 const INVALID_COLUMN: int = -1
 const INVALID_ROW: int = -1
@@ -803,44 +800,10 @@ static func color_to_string(color: Color) -> String:
 			"\nA: " + str(color.a).pad_decimals(NUMBERS_AFTER_DOT)
 		)
 
-static func stringifier_default(type: Type, hint: Hint, hint_string: String) -> Callable:
-	match type:
-		Type.INT when hint == Hint.ENUM:
-			var enumeration := hint_string_to_enum(hint_string)
-
-			var values: Dictionary[int, String] = {}
-			for key: StringName in enumeration:
-				values[enumeration[key]] = String(key)
-
-			values.make_read_only()
-
-			return func(value: int) -> String:
-				return values.get(value, "")
-
-		Type.INT when hint == Hint.FLAGS:
-			var flags := hint_string_to_flags(hint_string)
-
-			return func(value: int) -> String:
-				var string: String = ""
-
-				for key: String in flags:
-					if value & flags[key]:
-						string += key + ", "
-
-				return string.left(-2)
-
-		Type.FLOAT:
-			return hint_string.num.bind(NUMBERS_AFTER_DOT)
-		Type.COLOR:
-			return color_to_string_no_alpha if hint == Hint.COLOR_NO_ALPHA else color_to_string
-
-	return str
-
 
 static func create_type_hint(
 		type: Type,
-		hint: Hint,
-		hint_string: String,
+		hint: Dictionary,
 		stringifier: Callable,
 		edit_handler: Callable,
 	) -> Dictionary[StringName, Variant]:
@@ -848,64 +811,9 @@ static func create_type_hint(
 	return {
 		&"type": type,
 		&"hint": hint,
-		&"hint_string": hint_string,
 		&"stringifier": stringifier,
 		&"edit_handler": edit_handler,
 	}
-
-
-static func range_to_hint_string(min: float, max: float, step: float = 0.001) -> String:
-	return String.num(min, NUMBERS_AFTER_DOT) + "," + String.num(max, NUMBERS_AFTER_DOT) + "," + String.num(maxf(step, 0.001), NUMBERS_AFTER_DOT)
-
-static func hint_string_to_range(hint_string: String) -> PackedFloat64Array:
-	var split: PackedStringArray = hint_string.split(",")
-
-	return [
-		split[0].to_float() if split.size() > 0 and split[0].is_valid_float() else DEFAULT_NUM_MIN,
-		split[1].to_float() if split.size() > 1 and split[1].is_valid_float() else DEFAULT_NUM_MAX,
-		split[2].to_float() if split.size() > 2 and split[2].is_valid_float() else 0.001,
-	]
-
-
-static func enum_to_hint_string(enumeration: Dictionary) -> String:
-	var hint_string: String = ""
-
-	for key: String in enumeration:
-		hint_string += key + ":" + String.num_int64(enumeration[key]) + ","
-
-	return hint_string.left(-1)
-
-static func hint_string_to_enum(hint_string: String) -> Dictionary[StringName, int]:
-	var enumeration: Dictionary[StringName, int] = {}
-
-	var split: PackedStringArray = hint_string.split(",")
-	for i: int in split.size():
-		var subsplit: PackedStringArray = split[i].split(":")
-		if subsplit.size() > 1:
-			enumeration[StringName(subsplit[0])] = subsplit[1].to_int()
-		else:
-			enumeration[StringName(subsplit[0])] = i
-
-	enumeration.make_read_only()
-	return enumeration
-
-
-static func flags_to_hint_string(flags: Dictionary) -> String:
-	return enum_to_hint_string(flags)
-
-static func hint_string_to_flags(hint_string: String) -> Dictionary[StringName, int]:
-	var flags: Dictionary[StringName, int] = {}
-
-	var split: PackedStringArray = hint_string.split(",")
-	for i: int in split.size():
-		var subsplit: PackedStringArray = split[i].split(":")
-		if subsplit.size() > 1:
-			flags[StringName(subsplit[0])] = subsplit[1].to_int()
-		else:
-			flags[StringName(subsplit[0])] = 1 << i
-
-	flags.make_read_only()
-	return flags
 
 
 func set_cell_editor(cell_editor: Node) -> void:
@@ -918,15 +826,165 @@ func set_cell_editor(cell_editor: Node) -> void:
 	_cell_editor = cell_editor
 
 
-func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callable:
+static func create_column(
+		title: String,
+		type: Type,
+		hint: Dictionary,
+		stringifier: Callable,
+		edit_handler: Callable,
+		comparator: Callable,
+	) -> Dictionary[StringName, Variant]:
+
+	var text_line := TextLine.new()
+	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
+
+	var column: Dictionary[StringName, Variant] = {
+		&"rect": Rect2i(),
+		&"title": title,
+		&"tooltip": "",
+		&"visible": true,
+		&"text_line": text_line,
+		&"type_hint": create_type_hint(
+			type,
+			hint,
+			stringifier,
+			edit_handler,
+		),
+		&"draw_mode": DrawMode.NORMAL,
+		&"sort_mode": SortMode.NONE,
+		&"comparator": comparator,
+		&"custom_width": 0.0,
+		&"minimum_width": COLUMN_MINIMUM_WIDTH,
+	}
+
+	if DEBUG_ENABLED:
+		column[&"color"] = Color(randf(), randf(), randf())
+
+	return column
+
+## Returns a dictionary representing a `no hint` configuration.
+## This is useful for cases where no specific hint is required for the column.
+static func hint_none() -> Dictionary:
+	const HINT_NONE: Dictionary[StringName, Variant] = {&"type": Hint.NONE}
+	return HINT_NONE
+
+## Constructs a range hint dictionary with specified minimum, maximum, and step values.[br]
+## [br][param min]: The minimum value of the range.
+## [br][param max]: The maximum value of the range.
+## [br][param step]: The increment value for the range (default: 0.001).
+## [codeblock] func _ready() -> void:
+##   var column = table_view.add_column("Range", TableView.Type.FLOAT, TableView.hint_range(0.0, 1.0, 0.1))
+static func hint_range(min: float, max: float, step: float = 0.001) -> Dictionary:
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.RANGE, &"min": min, &"max": max, &"step": step}
+	hint.make_read_only()
+
+	return hint
+
+## Creates a dictionary representing an enumeration hint, using a dictionary of enumerated values.
+## [br][br][param enumeration]: A dictionary of possible enumerated values.
+## [codeblock]
+## enum Type {
+##   ARMOR,
+##   BOOK,
+##   KEY,
+##   MISC,
+##   POTION,
+##   WEAPON,
+## }
+##
+## func _ready() -> void:
+##   var column = table_view.add_column("Enum", TableView.Type.INT, TableView.hint_enum(Type))
+static func hint_enum(enumeration: Dictionary) -> Dictionary:
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.ENUM,  &"enum": enumeration}
+	hint.make_read_only()
+
+	return hint
+
+## Builds a dictionary representing a flags hint, where individual flags are provided in a dictionary.
+## [br][br][param flags]: A dictionary defining flag names and their corresponding values.
+## [codeblock]
+## enum Flags {
+##   EQUIPABLE = 1 << 0,
+##   STACKABLE = 1 << 1,
+##   CONSUMABLE = 1 << 2,
+##   TRADABLE = 1 << 3,
+## }
+##
+## func _ready() -> void:
+##   var column = table_view.add_column("Flags", TableView.Type.INT, TableView.hint_flags(Flags))
+static func hint_flags(flags: Dictionary) -> Dictionary:
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.FLAGS, &"flags": flags}
+	hint.make_read_only()
+
+	return hint
+
+## Creates a dictionary for a flags hint using an array of flag names as input.
+## Each flag name is mapped to a unique bit position.
+## [br][br][param flags]: An array of flag names.
+## [codeblock]
+## func _ready() -> void:
+##   var column = table_view.add_column("Flags", TableView.Type.INT, TableView.hint_flags_string(["EQUIPABLE", "STACKABLE", "CONSUMABLE", "TRADABLE"]))
+## [/codeblock]Internally converts the array into a dictionary where each flag is assigned a bitmask value.
+static func hint_flags_string(flags: PackedStringArray) -> Dictionary:
+	var dict: Dictionary[String, int] = {}
+
+	for i: int in flags.size():
+		dict[flags[i]] = 1 << i
+
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.FLAGS, &"flags": dict}
+	hint.make_read_only()
+
+	return hint
+
+## Returns a dictionary representing a color hint that excludes the alpha(transparency) channel.
+## This is useful for columns that require color input but should not support transparency.
+static func hint_color_no_alpha() -> Dictionary:
+	const HINT_COLOR_NO_ALPHA: Dictionary[StringName, Variant] = {&"type": Hint.COLOR_NO_ALPHA}
+	return HINT_COLOR_NO_ALPHA
+
+## Returns a [Callable] that converts values of a specific [param type] into their string representation.
+## This method ensures values are appropriately formatted as strings based on their type and associated hint.
+static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
+	match type:
+		Type.INT when hint.type == Hint.ENUM:
+			var values: Dictionary[int, String] = {}
+			for key: StringName in hint.enum:
+				values[hint.enum[key]] = String(key)
+
+			values.make_read_only()
+
+			return func(value: int) -> String:
+				return values.get(value, "")
+
+		Type.INT when hint.type == Hint.FLAGS:
+			var flags: Dictionary = hint.flags
+
+			return func(value: int) -> String:
+				var string: String = ""
+
+				for key: String in flags:
+					if value & flags[key]:
+						string += key + ", "
+
+				return string.left(-2)
+
+		Type.FLOAT:
+			return "".num.bind(NUMBERS_AFTER_DOT)
+
+		Type.COLOR:
+			return color_to_string_no_alpha if hint.type == Hint.COLOR_NO_ALPHA else color_to_string
+
+	return str
+
+## Returns a [Callable] function that handles editing logic for different types of data [param type] and associated hints.
+## The returned function customizes the editor used to modify cell values based on the provided type and hint.
+func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
 	match type:
 		Type.BOOL:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				setter.call(not getter.call())
 
-		Type.INT when hint == Hint.ENUM:
-			var enumeration := hint_string_to_enum(hint_string)
-
+		Type.INT when hint.type == Hint.ENUM:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				var popup := PopupMenu.new()
 				popup.add_theme_font_override(&"font", _font)
@@ -936,8 +994,8 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				popup.add_theme_color_override(&"font_outline_color", _font_outline_color)
 				popup.add_theme_stylebox_override(&"panel", _cell_edit)
 
-				for key: String in enumeration:
-					popup.add_item(key, enumeration[key])
+				for key: String in hint.enum:
+					popup.add_item(key, hint.enum[key])
 
 				popup.id_pressed.connect(setter)
 				popup.focus_exited.connect(popup.queue_free)
@@ -948,8 +1006,8 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 
 				popup.popup(get_screen_transform() * scrolled_rect(cell.rect))
 
-		Type.INT when hint == Hint.FLAGS:
-			var flags := hint_string_to_flags(hint_string)
+		Type.INT when hint.type == Hint.FLAGS:
+			var flags: Dictionary = hint.flags
 
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				var popup := PopupMenu.new()
@@ -989,10 +1047,19 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				var spin_box := SpinBox.new()
 				spin_box.set_use_rounded_values(type == Type.INT)
 
-				var range := hint_string_to_range(hint_string)
-				spin_box.set_min(range[0])
-				spin_box.set_max(range[1])
-				spin_box.set_step(maxf(range[2], 1.0) if type == Type.INT else range[2])
+				if hint.type == Hint.RANGE:
+					spin_box.set_min(hint.min)
+					spin_box.set_max(hint.max)
+					spin_box.set_step(maxf(hint.step, 1.0) if type == Type.INT else hint.step)
+				else:
+					const DEFAULT_MIN = -2147483648
+					const DEFAULT_MAX =  2147483647
+					const DEFAULT_STEP = 0.001
+
+					spin_box.set_min(DEFAULT_MIN)
+					spin_box.set_max(DEFAULT_MAX)
+					spin_box.set_step(DEFAULT_STEP)
+
 				spin_box.set_value(getter.call())
 
 				if type == Type.INT:
@@ -1057,7 +1124,7 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 				panel.focus_exited.connect(panel.queue_free)
 
 				var color_picker := ColorPicker.new()
-				color_picker.set_edit_alpha(hint != Hint.COLOR_NO_ALPHA)
+				color_picker.set_edit_alpha(hint.type != Hint.COLOR_NO_ALPHA)
 				color_picker.set_pick_color(getter.call())
 				color_picker.set_presets_visible(false)
 				color_picker.set_sampler_visible(false)
@@ -1074,13 +1141,15 @@ func edit_handler_default(type: Type, hint: Hint, hint_string: String) -> Callab
 
 	return Callable()
 
-static func default_comparator(type: Type, hint: Hint, hint_string: String) -> Callable:
+## Returns a [Callable] function to compare two values of a specific [param type] with an optional hint.
+## The returned comparator is used for sorting.
+static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 	match type:
 		Type.STRING, Type.STRING_NAME:
 			return func(a: String, b: String) -> bool:
 				return a < b
 
-		Type.COLOR when hint == Hint.COLOR_NO_ALPHA:
+		Type.COLOR when hint.type == Hint.COLOR_NO_ALPHA:
 			return func(a: Color, b: Color) -> bool:
 				if a.r != b.r:
 					return a.r < b.r
@@ -1104,60 +1173,19 @@ static func default_comparator(type: Type, hint: Hint, hint_string: String) -> C
 		return a < b
 
 
-static func create_column(
-		title: String,
-		type: Type,
-		hint: Hint,
-		hint_string: String,
-		stringifier: Callable,
-		edit_handler: Callable,
-		comparator: Callable,
-	) -> Dictionary[StringName, Variant]:
-
-	var text_line := TextLine.new()
-	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
-
-	var column: Dictionary[StringName, Variant] = {
-		&"rect": Rect2i(),
-		&"title": title,
-		&"tooltip": "",
-		&"visible": true,
-		&"text_line": text_line,
-		&"type_hint": create_type_hint(
-			type,
-			hint,
-			hint_string,
-			stringifier,
-			edit_handler,
-		),
-		&"draw_mode": DrawMode.NORMAL,
-		&"sort_mode": SortMode.NONE,
-		&"comparator": comparator,
-		&"custom_width": 0.0,
-		&"minimum_width": COLUMN_MINIMUM_WIDTH,
-	}
-
-	if DEBUG_ENABLED:
-		column[&"color"] = Color(randf(), randf(), randf())
-
-	return column
-
-
 func add_column(
 		title: String,
 		type: Type,
-		hint: Hint = Hint.NONE,
-		hint_string: String = "",
-		stringifier: Callable = stringifier_default(type, hint, hint_string),
-		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
-		comparator: Callable = default_comparator(type, hint, hint_string),
+		hint: Dictionary = hint_none(),
+		stringifier: Callable = default_stringifier(type, hint),
+		edit_handler: Callable = default_edit_handler(type, hint),
+		comparator: Callable = default_comparator(type, hint),
 	) -> int:
 
 	var column: Dictionary[StringName, Variant] = create_column(
 		title,
 		type,
 		hint,
-		hint_string,
 		stringifier,
 		edit_handler,
 		comparator
@@ -1172,7 +1200,7 @@ func add_column(
 	for row: Dictionary in _rows:
 		row.cells.push_back(create_cell(type_hint))
 
-	column_created.emit(_columns.size() - 1, type, hint, hint_string)
+	column_created.emit(_columns.size() - 1, type, hint)
 	mark_dirty()
 
 	return _columns.size() - 1
@@ -1201,14 +1229,14 @@ func set_column_count(new_size: int) -> void:
 		row.cells.resize(new_size)
 
 	while old_size < new_size:
+		var hint: Dictionary = hint_none()
 		var column: Dictionary = create_column(
 			"Column %d" % old_size,
 			Type.BOOL,
-			Hint.NONE,
-			"",
-			stringifier_default(Type.BOOL, Hint.NONE, ""),
-			edit_handler_default(Type.BOOL, Hint.NONE, ""),
-			default_comparator(Type.BOOL, Hint.NONE, ""),
+			hint,
+			default_stringifier(Type.BOOL, hint),
+			default_edit_handler(Type.BOOL, hint),
+			default_comparator(Type.BOOL, hint),
 		)
 		_columns[old_size] = column
 
@@ -1306,19 +1334,17 @@ func get_column_width(column_idx: int) -> int:
 func set_column_type(
 		column_idx: int,
 		type: Type,
-		hint: Hint = Hint.NONE,
-		hint_string: String = "",
-		stringifier: Callable = stringifier_default(type, hint, hint_string),
-		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
+		hint: Dictionary = hint_none(),
+		stringifier: Callable = default_stringifier(type, hint),
+		edit_handler: Callable = default_edit_handler(type, hint),
 	) -> void:
 
 	var type_hint: Dictionary[StringName, Variant] = _columns[column_idx][&"type_hint"]
-	if type_hint.type == type and type_hint.hint == hint and type_hint.hint_string == hint_string:
+	if type_hint.type == type and is_same(type_hint.hint, hint):
 		return
 
 	type_hint.type = type
 	type_hint.hint = hint
-	type_hint.hint_string = hint_string
 	type_hint.stringifier = stringifier
 	type_hint.edit_handler = edit_handler
 
@@ -1661,16 +1687,14 @@ func set_cell_custom_type(
 		row_idx: int,
 		column_idx: int,
 		type: Type,
-		hint: Hint = Hint.NONE,
-		hint_string: String = "",
-		stringifier: Callable = stringifier_default(type, hint, hint_string),
-		edit_handler: Callable = edit_handler_default(type, hint, hint_string),
+		hint: Dictionary = hint_none(),
+		stringifier: Callable = default_stringifier(type, hint),
+		edit_handler: Callable = default_edit_handler(type, hint),
 	) -> void:
 
 	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = create_type_hint(
 		type,
 		hint,
-		hint_string,
 		stringifier,
 		edit_handler,
 	)
