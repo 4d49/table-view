@@ -57,7 +57,7 @@ for item: Dictionary in get_items(): # Returns an array of dictionaries.
 Because I can.
 
 # License
-Copyright (c) 2024 Mansur Isaev and contributors
+Copyright (c) 2024-2025 Mansur Isaev and contributors
 
 Unless otherwise specified, files in this repository are licensed under the
 MIT license. See [LICENSE.md](LICENSE.md) for more information.
