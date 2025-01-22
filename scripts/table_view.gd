@@ -946,7 +946,7 @@ static func hint_color_no_alpha() -> Dictionary:
 ## Creates a dictionary hint that enforces a maximum length for a string input.
 ## [br][param string_length]: The maximum allowed length for the string.
 static func hint_string_length(string_length: int) -> Dictionary:
-	var hint: Dictionary[StringName, Variant] = {&"type": Hint.STRING_LENGTH, &"length": string_length}
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.STRING_LENGTH, &"length": maxi(string_length, 0)}
 	hint.make_read_only()
 
 	return hint
