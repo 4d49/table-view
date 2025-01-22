@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://dc7jcdu84cn8c" path="res://addons/table-view/scripts/table_view.gd" id="2_1kret"]
 
 [sub_resource type="GDScript" id="script"]
-script/source = "# Copyright (c) 2024 Mansur Isaev and contributors - MIT License
+script/source = "# Copyright (c) 2024-2025 Mansur Isaev and contributors - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 
 extends PanelContainer
