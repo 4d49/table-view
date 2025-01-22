@@ -49,7 +49,7 @@ var row_menu: PopupMenu = null
 func _ready() -> void:
 	# The `add_column` method returns the index of the new column.
 	# The first argument is the column title, the second its type.
-	var uid := table_view.add_column(\"UID\", TableView.Type.STRING_NAME)
+	var uid := table_view.add_column(\"UID\", TableView.Type.STRING_NAME, TableView.hint_string_length(20))
 	table_view.set_column_minimum_width(uid, 75)
 
 	var name := table_view.add_column(\"Name\", TableView.Type.STRING)

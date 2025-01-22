@@ -49,6 +49,7 @@ enum Hint {
 	ENUM = PROPERTY_HINT_ENUM,
 	FLAGS = PROPERTY_HINT_FLAGS,
 	COLOR_NO_ALPHA = PROPERTY_HINT_COLOR_NO_ALPHA,
+	STRING_LENGTH,
 }
 enum DrawMode {
 	NORMAL,
@@ -942,6 +943,14 @@ static func hint_color_no_alpha() -> Dictionary:
 	const HINT_COLOR_NO_ALPHA: Dictionary[StringName, Variant] = {&"type": Hint.COLOR_NO_ALPHA}
 	return HINT_COLOR_NO_ALPHA
 
+## Creates a dictionary hint that enforces a maximum length for a string input.
+## [br][param string_length]: The maximum allowed length for the string.
+static func hint_string_length(string_length: int) -> Dictionary:
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.STRING_LENGTH, &"length": maxi(string_length, 0)}
+	hint.make_read_only()
+
+	return hint
+
 ## Returns a [Callable] that converts values of a specific [param type] into their string representation.
 ## This method ensures values are appropriately formatted as strings based on their type and associated hint.
 static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
@@ -1098,6 +1107,10 @@ func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
 				line_edit.add_theme_color_override(&"font_outline_color", _font_outline_color)
 				line_edit.add_theme_stylebox_override(&"normal", _cell_edit)
 				line_edit.add_theme_stylebox_override(&"focus", _cell_edit_empty)
+
+				if hint.type == Hint.STRING_LENGTH:
+					line_edit.set_max_length(hint.length)
+
 				line_edit.set_text(getter.call())
 
 				if type == Type.STRING_NAME:
