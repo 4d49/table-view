@@ -1,7 +1,7 @@
-[gd_resource type="Theme" load_steps=13 format=3 uid="uid://de8hd50qv2mti"]
+[gd_resource type="Theme" load_steps=14 format=3 uid="uid://de8hd50qv2mti"]
 
-[ext_resource type="Texture2D" uid="uid://chpbyfbp6wcrd" path="res://addons/table-view/icons/sort_ascending.svg" id="sort_ascending"]
-[ext_resource type="Texture2D" uid="uid://dn3o1ga1gm5um" path="res://addons/table-view/icons/sort_descending.svg" id="sort_descending"]
+[ext_resource type="Texture2D" uid="uid://dmmd5eby0i0dq" path="res://addons/table-view/icons/sort_ascending.svg" id="sort_ascending"]
+[ext_resource type="Texture2D" uid="uid://bqph2st4brflc" path="res://addons/table-view/icons/sort_descending.svg" id="sort_descending"]
 
 [sub_resource type="StyleBoxFlat" id="cell_edit"]
 content_margin_left = 4.0
@@ -71,6 +71,11 @@ bg_color = Color(0.211765, 0.239216, 0.290196, 0.501961)
 corner_detail = 1
 anti_aliasing = false
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7y2is"]
+bg_color = Color(1, 1, 1, 0.1)
+corner_detail = 1
+anti_aliasing = false
+
 [sub_resource type="StyleBoxEmpty" id="row_normal"]
 
 [sub_resource type="StyleBoxFlat" id="row_selected"]
@@ -96,5 +101,6 @@ TableView/styles/column_pressed = SubResource("column_pressed")
 TableView/styles/focus = SubResource("focus")
 TableView/styles/panel = SubResource("panel")
 TableView/styles/row_alternate = SubResource("row_alternate")
+TableView/styles/row_hover = SubResource("StyleBoxFlat_7y2is")
 TableView/styles/row_normal = SubResource("row_normal")
 TableView/styles/row_selected = SubResource("row_selected")
