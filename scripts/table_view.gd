@@ -95,6 +95,11 @@ const H_SEPARATION = 4
 	set = set_editable,
 	get = is_editable
 
+# TODO: Also add alignment for cells.
+@export var column_title_alignment: HorizontalAlignment = HorizontalAlignment.HORIZONTAL_ALIGNMENT_CENTER:
+	set = set_column_title_alignment,
+	get = get_column_title_alignment
+
 
 var _dirty: bool = true
 
@@ -597,6 +602,21 @@ func get_column_resize_mode() -> ColumnResizeMode:
 	return column_resize_mode
 
 
+func set_column_title_alignment(n_column_title_alignment: HorizontalAlignment) -> void:
+	if column_title_alignment == n_column_title_alignment:
+		return
+
+	for column: Dictionary in _columns:
+		var text_line: TextLine = column.text_line
+		text_line.set_horizontal_alignment(n_column_title_alignment)
+
+	column_title_alignment = n_column_title_alignment
+	mark_dirty()
+
+func get_column_title_alignment() -> HorizontalAlignment:
+	return column_title_alignment
+
+
 func set_select_mode(n_select_mode: SelectMode) -> void:
 	if select_mode == n_select_mode:
 		return
@@ -841,15 +861,12 @@ static func create_column(
 		comparator: Callable,
 	) -> Dictionary[StringName, Variant]:
 
-	var text_line := TextLine.new()
-	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
-
 	var column: Dictionary[StringName, Variant] = {
 		&"rect": Rect2i(),
 		&"title": title,
 		&"tooltip": "",
 		&"visible": true,
-		&"text_line": text_line,
+		&"text_line": TextLine.new(),
 		&"type_hint": create_type_hint(
 			type,
 			hint,
@@ -1210,6 +1227,7 @@ func add_column(
 	)
 
 	var text_line: TextLine = column.text_line
+	text_line.set_horizontal_alignment(column_title_alignment)
 	text_line.add_string(title, _font, _font_size)
 
 	_columns.push_back(column)
