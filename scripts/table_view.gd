@@ -133,6 +133,7 @@ var _font_outline_color: Color = Color.BLACK
 var _panel: StyleBox = null
 var _focus: StyleBox = null
 
+var _row_hover: StyleBox = null
 var _row_normal: StyleBox = null
 var _row_selected: StyleBox = null
 var _row_alternate: StyleBox = null
@@ -306,6 +307,7 @@ func _notification(what: int) -> void:
 			RenderingServer.canvas_item_set_custom_rect(_canvas, true, drawable_rect)
 			RenderingServer.canvas_item_set_clip(_canvas, true)
 
+			var mouse_position: Vector2 = get_local_mouse_position()
 			var draw_begun: bool = false
 
 			var idx: int = 0
@@ -323,6 +325,8 @@ func _notification(what: int) -> void:
 
 				if row.selected:
 					_row_selected.draw(_canvas, rect)
+				elif rect.has_point(mouse_position):
+					_row_hover.draw(_canvas, rect)
 				elif idx % 2:
 					_row_alternate.draw(_canvas, rect)
 				else:
@@ -390,6 +394,7 @@ func _notification(what: int) -> void:
 			_panel = get_theme_stylebox(&"panel", &"TableView")
 			_focus = get_theme_stylebox(&"focus", &"TableView")
 
+			_row_hover = get_theme_stylebox(&"row_hover", &"TableView")
 			_row_normal = get_theme_stylebox(&"row_normal", &"TableView")
 			_row_selected = get_theme_stylebox(&"row_selected", &"TableView")
 			_row_alternate = get_theme_stylebox(&"row_alternate", &"TableView")
@@ -484,7 +489,7 @@ func _gui_input(event: InputEvent) -> void:
 				if not column.visible:
 					continue
 
-				var column_rect = scrolled_rect_horizontal(column.rect).grow_side(SIDE_LEFT, -2)
+				var column_rect := scrolled_rect_horizontal(column.rect).grow_side(SIDE_LEFT, -2)
 				column.draw_mode = DrawMode.HOVER if column_rect.has_point(position) else DrawMode.NORMAL
 
 		# Handle interactive column resizing mode
@@ -1923,7 +1928,7 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 	edit_handler.call(cell, setter, getter)
 
 
-func _on_scroll_value_changed(_value) -> void:
+func _on_scroll_value_changed(_value: float) -> void:
 	queue_redraw()
 
 
