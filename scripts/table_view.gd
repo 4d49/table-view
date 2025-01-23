@@ -489,7 +489,7 @@ func _gui_input(event: InputEvent) -> void:
 				if not column.visible:
 					continue
 
-				var column_rect = scrolled_rect_horizontal(column.rect).grow_side(SIDE_LEFT, -2)
+				var column_rect := scrolled_rect_horizontal(column.rect).grow_side(SIDE_LEFT, -2)
 				column.draw_mode = DrawMode.HOVER if column_rect.has_point(position) else DrawMode.NORMAL
 
 		# Handle interactive column resizing mode
@@ -1928,7 +1928,7 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 	edit_handler.call(cell, setter, getter)
 
 
-func _on_scroll_value_changed(_value) -> void:
+func _on_scroll_value_changed(_value: float) -> void:
 	queue_redraw()
 
 
