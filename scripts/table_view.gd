@@ -178,8 +178,6 @@ func _init() -> void:
 	self.column_clicked.connect(_on_column_clicked)
 	self.column_rmb_clicked.connect(_on_column_rmb_clicked)
 
-	self.cell_double_clicked.connect(_on_cell_double_click)
-
 	self.row_rmb_clicked.connect(_on_row_rmb_clicked)
 	self.row_selection_changed.connect(_on_row_selection_changed)
 
@@ -458,13 +456,34 @@ func _handle_cell_event(event: InputEventMouseButton, row_idx: int, position: Ve
 	if cell_idx == INVALID_CELL:
 		return
 
-	if event.get_button_index() == MOUSE_BUTTON_LEFT:
-		if event.is_double_click():
-			cell_double_clicked.emit(row_idx, cell_idx)
+	var row: Dictionary = _rows[row_idx]
+	var cell: Dictionary = row[&"cells"][cell_idx]
+
+	var input_handler: Callable = cell.type_hint.input_handler
+	if not input_handler.is_valid():
+		return
+
+	var text_line: TextLine = cell.text_line
+	var stringifier: Callable = cell.type_hint.stringifier
+
+	var setter: Callable = func set_value(value: Variant) -> void:
+		if is_same(cell.value, value):
+			return
+
+		text_line.clear()
+		if value == null:
+			text_line.add_string("<null>", _font, _font_size)
 		else:
-			cell_clicked.emit(row_idx, cell_idx)
-	else:
-		cell_rmb_clicked.emit(row_idx, cell_idx)
+			text_line.add_string(stringifier.call(value), _font, _font_size)
+
+		cell.value = value
+		cell_value_changed.emit(row_idx, cell_idx, value)
+
+		queue_redraw()
+	var getter: Callable = func get_value() -> Variant:
+		return cell.value
+
+	input_handler.call(event, cell, setter, getter)
 
 func _handle_row_event(event: InputEventMouseButton, position: Vector2) -> void:
 	var row_idx := find_row_at_position(scrolled_position(position))
@@ -990,9 +1009,8 @@ static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
 
 	return str
 
-## Returns a [Callable] function that handles editing logic for different types of data [param type] and associated hints.
-## The returned function customizes the editor used to modify cell values based on the provided type and hint.
-func default_input_handler(type: Type, hint: Dictionary) -> Callable:
+
+func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
 	match type:
 		Type.BOOL:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
@@ -1158,6 +1176,27 @@ func default_input_handler(type: Type, hint: Dictionary) -> Callable:
 				panel.popup(get_screen_transform() * scrolled_rect(cell.rect))
 
 	return Callable()
+
+## Returns a [Callable] function that handles editing logic for different types of data [param type] and associated hints.
+## The returned function customizes the editor used to modify cell values based on the provided type and hint.
+func default_input_handler(type: Type, hint: Dictionary) -> Callable:
+	var edit_handler: Callable = default_edit_handler(type, hint)
+	if not edit_handler.is_valid():
+		return Callable()
+
+	return func(input: InputEventMouseButton, cell: Dictionary, setter: Callable, getter: Callable) -> void:
+		if input.is_double_click():
+			edit_handler.call(cell, setter, getter)
+		elif input.is_pressed():
+			match input.get_button_index():
+				MOUSE_BUTTON_LEFT:
+					return
+				MOUSE_BUTTON_RIGHT:
+					return
+		else:
+			return
+
+		accept_event()
 
 ## Returns a [Callable] function to compare two values of a specific [param type] with an optional hint.
 ## The returned comparator is used for sorting.
@@ -1893,39 +1932,6 @@ func _on_row_rmb_clicked(row_idx: int) -> void:
 	if not is_row_selected(row_idx):
 		select_single_row(row_idx)
 
-
-func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
-	if not is_editable():
-		return
-
-	var row: Dictionary = _rows[row_idx]
-	var cell: Dictionary = row[&"cells"][column_idx]
-
-	var input_handler: Callable = cell.type_hint.input_handler
-	if not input_handler.is_valid():
-		return
-
-	var text_line: TextLine = cell.text_line
-	var stringifier: Callable = cell.type_hint.stringifier
-
-	var setter: Callable = func set_value(value: Variant) -> void:
-		if is_same(cell.value, value):
-			return
-
-		text_line.clear()
-		if value == null:
-			text_line.add_string("<null>", _font, _font_size)
-		else:
-			text_line.add_string(stringifier.call(value), _font, _font_size)
-
-		cell.value = value
-		cell_value_changed.emit(row_idx, column_idx, value)
-
-		queue_redraw()
-	var getter: Callable = func get_value() -> Variant:
-		return cell.value
-
-	input_handler.call(cell, setter, getter)
 
 
 func _on_scroll_value_changed(_value: float) -> void:
