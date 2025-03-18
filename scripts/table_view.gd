@@ -811,14 +811,14 @@ static func create_type_hint(
 		type: Type,
 		hint: Dictionary,
 		stringifier: Callable,
-		edit_handler: Callable,
+		input_handler: Callable,
 	) -> Dictionary[StringName, Variant]:
 
 	return {
 		&"type": type,
 		&"hint": hint,
 		&"stringifier": stringifier,
-		&"edit_handler": edit_handler,
+		&"input_handler": input_handler,
 	}
 
 
@@ -837,7 +837,7 @@ static func create_column(
 		type: Type,
 		hint: Dictionary,
 		stringifier: Callable,
-		edit_handler: Callable,
+		input_handler: Callable,
 		comparator: Callable,
 	) -> Dictionary[StringName, Variant]:
 
@@ -854,7 +854,7 @@ static func create_column(
 			type,
 			hint,
 			stringifier,
-			edit_handler,
+			input_handler,
 		),
 		&"draw_mode": DrawMode.NORMAL,
 		&"sort_mode": SortMode.NONE,
@@ -992,7 +992,7 @@ static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
 
 ## Returns a [Callable] function that handles editing logic for different types of data [param type] and associated hints.
 ## The returned function customizes the editor used to modify cell values based on the provided type and hint.
-func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
+func default_input_handler(type: Type, hint: Dictionary) -> Callable:
 	match type:
 		Type.BOOL:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
@@ -1196,7 +1196,7 @@ func add_column(
 		type: Type,
 		hint: Dictionary = hint_none(),
 		stringifier: Callable = default_stringifier(type, hint),
-		edit_handler: Callable = default_edit_handler(type, hint),
+		input_handler: Callable = default_input_handler(type, hint),
 		comparator: Callable = default_comparator(type, hint),
 	) -> int:
 
@@ -1205,7 +1205,7 @@ func add_column(
 		type,
 		hint,
 		stringifier,
-		edit_handler,
+		input_handler,
 		comparator
 	)
 
@@ -1253,7 +1253,7 @@ func set_column_count(new_size: int) -> void:
 			Type.BOOL,
 			hint,
 			default_stringifier(Type.BOOL, hint),
-			default_edit_handler(Type.BOOL, hint),
+			default_input_handler(Type.BOOL, hint),
 			default_comparator(Type.BOOL, hint),
 		)
 		_columns[old_size] = column
@@ -1354,7 +1354,7 @@ func set_column_type(
 		type: Type,
 		hint: Dictionary = hint_none(),
 		stringifier: Callable = default_stringifier(type, hint),
-		edit_handler: Callable = default_edit_handler(type, hint),
+		input_handler: Callable = default_input_handler(type, hint),
 	) -> void:
 
 	var type_hint: Dictionary[StringName, Variant] = _columns[column_idx][&"type_hint"]
@@ -1364,7 +1364,7 @@ func set_column_type(
 	type_hint.type = type
 	type_hint.hint = hint
 	type_hint.stringifier = stringifier
-	type_hint.edit_handler = edit_handler
+	type_hint.input_handler = input_handler
 
 func get_column_type(column_idx: int) -> Type:
 	return _columns[column_idx][&"type_hint"][&"type"]
@@ -1707,14 +1707,14 @@ func set_cell_custom_type(
 		type: Type,
 		hint: Dictionary = hint_none(),
 		stringifier: Callable = default_stringifier(type, hint),
-		edit_handler: Callable = default_edit_handler(type, hint),
+		input_handler: Callable = default_input_handler(type, hint),
 	) -> void:
 
 	_rows[row_idx][&"cells"][column_idx][&"type_hint"] = create_type_hint(
 		type,
 		hint,
 		stringifier,
-		edit_handler,
+		input_handler,
 	)
 
 func get_cell_type(row_idx: int, column_idx: int) -> Type:
@@ -1726,8 +1726,8 @@ func get_cell_hint(row_idx: int, column_idx: int) -> Hint:
 func get_cell_hint_string(row_idx: int, column_idx: int) -> String:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"hint_string"]
 
-func get_cell_edit_handler(row_idx: int, column_idx: int) -> Callable:
-	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"edit_handler"]
+func get_cell_input_handler(row_idx: int, column_idx: int) -> Callable:
+	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"input_handler"]
 
 
 func stringify_cell(row_idx: int, column_idx: int) -> String:
@@ -1901,8 +1901,8 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 	var row: Dictionary = _rows[row_idx]
 	var cell: Dictionary = row[&"cells"][column_idx]
 
-	var edit_handler: Callable = cell.type_hint.edit_handler
-	if not edit_handler.is_valid():
+	var input_handler: Callable = cell.type_hint.input_handler
+	if not input_handler.is_valid():
 		return
 
 	var text_line: TextLine = cell.text_line
@@ -1925,7 +1925,7 @@ func _on_cell_double_click(row_idx: int, column_idx: int) -> void:
 	var getter: Callable = func get_value() -> Variant:
 		return cell.value
 
-	edit_handler.call(cell, setter, getter)
+	input_handler.call(cell, setter, getter)
 
 
 func _on_scroll_value_changed(_value: float) -> void:
