@@ -456,6 +456,14 @@ func _handle_cell_event(event: InputEventMouseButton, row_idx: int, position: Ve
 	if cell_idx == INVALID_CELL:
 		return
 
+	if event.get_button_index() == MOUSE_BUTTON_LEFT:
+		if event.is_double_click():
+			cell_double_clicked.emit(row_idx, cell_idx)
+		else:
+			cell_clicked.emit(row_idx, cell_idx)
+	elif event.get_button_index() == MOUSE_BUTTON_RIGHT:
+		cell_rmb_clicked.emit(row_idx, cell_idx)
+
 	var row: Dictionary = _rows[row_idx]
 	var cell: Dictionary = row[&"cells"][cell_idx]
 
@@ -1185,17 +1193,10 @@ func default_input_handler(type: Type, hint: Dictionary) -> Callable:
 		return Callable()
 
 	return func(input: InputEventMouseButton, cell: Dictionary, setter: Callable, getter: Callable) -> void:
-		if input.is_double_click():
-			edit_handler.call(cell, setter, getter)
-		elif input.is_pressed():
-			match input.get_button_index():
-				MOUSE_BUTTON_LEFT:
-					return
-				MOUSE_BUTTON_RIGHT:
-					return
-		else:
+		if input.get_button_index() != MOUSE_BUTTON_LEFT or not input.is_double_click():
 			return
 
+		edit_handler.call(cell, setter, getter)
 		accept_event()
 
 ## Returns a [Callable] function to compare two values of a specific [param type] with an optional hint.
