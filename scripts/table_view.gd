@@ -1270,7 +1270,6 @@ static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 		Type.STRING, Type.STRING_NAME:
 			return func(a: String, b: String) -> bool:
 				return a < b
-
 		Type.COLOR when hint.type == Hint.COLOR_NO_ALPHA:
 			return func(a: Color, b: Color) -> bool:
 				if a.r != b.r:
@@ -1279,7 +1278,6 @@ static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 					return a.g < b.g
 				else:
 					return a.b < b.b
-
 		Type.COLOR:
 			return func(a: Color, b: Color) -> bool:
 				if a.r != b.r:
@@ -1290,6 +1288,9 @@ static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 					return a.b < b.b
 				else:
 					return a.a < b.a
+		Type.CALLABLE:
+			# We can't sort rows by Callable.
+			return Callable()
 
 	return func(a: Variant, b: Variant) -> bool:
 		return a < b
