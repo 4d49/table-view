@@ -75,6 +75,7 @@ func _ready() -> void:
 	table_view.set_column_minimum_width(flags, 125)
 
 	var color := table_view.add_column(\"Color\", TableView.Type.COLOR, TableView.hint_color_no_alpha())
+	var button := table_view.add_column(\"Button\", TableView.Type.CALLABLE, TableView.hint_button(\"Print\"))
 
 	# Some method returning an array with dictionaries.
 	for data: Dictionary in get_some_data():
@@ -91,6 +92,11 @@ func _ready() -> void:
 		table_view.set_cell_value(row_idx, type, data.type)
 		table_view.set_cell_value(row_idx, flags, data.flags)
 		table_view.set_cell_value(row_idx, color, data.color)
+		# Setup Callable for button.
+		table_view.set_cell_value(row_idx, button, func print_row() -> void:
+			prints(\"UID:\", data.uid, \"\\nName:\", data.name, \"\\nCost:\", data.cost, \"\\nWeight:\", data.weight)
+		)
+
 
 
 func random_flags() -> int:

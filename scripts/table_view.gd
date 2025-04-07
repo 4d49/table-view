@@ -41,15 +41,17 @@ enum Type {
 	STRING = TYPE_STRING,
 	COLOR = TYPE_COLOR,
 	STRING_NAME = TYPE_STRING_NAME,
+	CALLABLE = TYPE_CALLABLE,
 	MAX,
 }
 enum Hint {
-	NONE = PROPERTY_HINT_NONE,
-	RANGE = PROPERTY_HINT_RANGE,
-	ENUM = PROPERTY_HINT_ENUM,
-	FLAGS = PROPERTY_HINT_FLAGS,
-	COLOR_NO_ALPHA = PROPERTY_HINT_COLOR_NO_ALPHA,
+	NONE,
+	RANGE,
+	ENUM,
+	FLAGS,
+	COLOR_NO_ALPHA,
 	STRING_LENGTH,
+	BUTTON,
 }
 enum DrawMode {
 	NORMAL,
@@ -138,6 +140,10 @@ var _row_normal: StyleBox = null
 var _row_selected: StyleBox = null
 var _row_alternate: StyleBox = null
 
+var _button_hover: StyleBox = null
+var _button_normal: StyleBox = null
+var _button_pressed: StyleBox = null
+
 var _column_normal: StyleBox = null
 var _column_hover: StyleBox = null
 var _column_pressed: StyleBox = null
@@ -204,6 +210,9 @@ func _notification(what: int) -> void:
 			draw_rect(drawable_rect, Color(Color.GREEN, 0.05))
 			draw_rect(drawable_rect, Color(Color.GREEN, 0.10), false)
 
+			var ci: RID = get_canvas_item()
+			var mouse_position: Vector2 = get_local_mouse_position()
+
 			#region draw rows
 			for row: Dictionary in _rows:
 				if not row.visible:
@@ -216,7 +225,7 @@ func _notification(what: int) -> void:
 				var color: Color = row.color
 				if row.selected:
 					color = color.lerp(Color.WHITE, 0.5)
-				if rect.has_point(get_local_mouse_position()):
+				if rect.has_point(mouse_position):
 					color = color.lerp(Color.WHITE, 0.5)
 
 				draw_rect(rect, Color(color, 0.25))
@@ -230,20 +239,31 @@ func _notification(what: int) -> void:
 					rect = margin_rect(rect)
 
 					color = cell.color
-					if rect.has_point(get_local_mouse_position()):
+					if rect.has_point(mouse_position):
 						color = color.lerp(Color.WHITE, 0.5)
 
 					draw_rect(rect, Color(color, 0.25))
 					draw_rect(rect, Color(color, 0.50), false)
 
-					match cell.type_hint.type:
+					var type_hint: Dictionary = cell.type_hint
+					match type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
-							texture.draw(get_canvas_item(), get_texture_position_in_rect(texture.get_size(), rect, HORIZONTAL_ALIGNMENT_LEFT))
+							texture.draw(ci, get_texture_position_in_rect(texture.get_size(), rect, HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
 							draw_rect(rect, cell.value)
+						Type.CALLABLE when type_hint.hint.type == Hint.BUTTON:
+							if rect.has_point(mouse_position):
+								if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+									draw_rect(rect, Color.RED)
+								else:
+									draw_rect(rect, Color(Color.RED, 0.5))
+							else:
+								draw_rect(rect, Color(Color.GRAY, 0.5))
+
+							draw_text_line(ci, cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
 						_:
-							draw_text_line(get_canvas_item(), cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
+							draw_text_line(ci, cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
 			#endregion
 
 			#region draw columns
@@ -313,7 +333,7 @@ func _notification(what: int) -> void:
 				if not row.visible:
 					continue
 
-				var rect := scrolled_rect(row.rect)
+				var rect: Rect2 = scrolled_rect(row.rect)
 				if drawable_rect.intersects(rect):
 					draw_begun = true
 				elif draw_begun:
@@ -340,13 +360,24 @@ func _notification(what: int) -> void:
 					if not drawable_rect.intersects(rect):
 						continue
 
-					match cell.type_hint.type:
+					var type_hint: Dictionary = cell.type_hint
+					match type_hint.type:
 						Type.BOOL:
 							var texture: Texture2D = _checked if cell.value else _unchecked
 							texture.draw(_canvas, get_texture_position_in_rect(texture.get_size(), margin_rect(rect), HORIZONTAL_ALIGNMENT_LEFT))
 						Type.COLOR:
 							var color: Color = Color.BLACK if cell.value == null else cell.value
 							RenderingServer.canvas_item_add_rect(_canvas, margin_rect(rect), color)
+						Type.CALLABLE when type_hint.hint.type == Hint.BUTTON:
+							if rect.has_point(mouse_position):
+								if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+									_button_pressed.draw(_canvas, margin_rect(rect))
+								else:
+									_button_hover.draw(_canvas, margin_rect(rect))
+							else:
+								_button_normal.draw(_canvas, margin_rect(rect))
+
+							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
 						_:
 							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
 
@@ -396,6 +427,10 @@ func _notification(what: int) -> void:
 			_row_normal = get_theme_stylebox(&"row_normal", &"TableView")
 			_row_selected = get_theme_stylebox(&"row_selected", &"TableView")
 			_row_alternate = get_theme_stylebox(&"row_alternate", &"TableView")
+
+			_button_hover = get_theme_stylebox(&"button_hover", &"TableView")
+			_button_normal = get_theme_stylebox(&"button_normal", &"TableView")
+			_button_pressed = get_theme_stylebox(&"button_pressed", &"TableView")
 
 			_column_hover = get_theme_stylebox(&"column_hover", &"TableView")
 			_column_normal = get_theme_stylebox(&"column_normal", &"TableView")
@@ -983,6 +1018,16 @@ static func hint_string_length(string_length: int) -> Dictionary:
 
 	return hint
 
+## Returns a dictionary representing the hint for the button type.
+static func hint_button(text: String) -> Dictionary:
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.BUTTON, &"text": text}
+	hint.make_read_only()
+
+	return hint
+
+
+
+
 ## Returns a [Callable] that converts values of a specific [param type] into their string representation.
 ## This method ensures values are appropriately formatted as strings based on their type and associated hint.
 static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
@@ -1014,6 +1059,11 @@ static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
 
 		Type.COLOR:
 			return color_to_string_no_alpha if hint.type == Hint.COLOR_NO_ALPHA else color_to_string
+
+		Type.CALLABLE when hint.type == Hint.BUTTON:
+			# We ignore the cell value (there should be a Callable) and use the text stored in `Hint`.
+			return func button_text(_value: Variant) -> String:
+				return hint.text
 
 	return str
 
@@ -1185,9 +1235,23 @@ func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
 
 	return Callable()
 
+
+func _handle_button_input_event(input: InputEventMouseButton, cell: Dictionary, _setter: Callable, getter: Callable) -> void:
+	if input.get_button_index() != MOUSE_BUTTON_LEFT or not input.is_pressed():
+		return
+
+	var callable: Callable = getter.call()
+	if callable.is_valid():
+		callable.call()
+
+	accept_event()
+
 ## Returns a [Callable] function that handles editing logic for different types of data [param type] and associated hints.
 ## The returned function customizes the editor used to modify cell values based on the provided type and hint.
 func default_input_handler(type: Type, hint: Dictionary) -> Callable:
+	if type == Type.CALLABLE and hint.type == Hint.BUTTON:
+		return _handle_button_input_event
+
 	var edit_handler: Callable = default_edit_handler(type, hint)
 	if not edit_handler.is_valid():
 		return Callable()
@@ -1206,7 +1270,6 @@ static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 		Type.STRING, Type.STRING_NAME:
 			return func(a: String, b: String) -> bool:
 				return a < b
-
 		Type.COLOR when hint.type == Hint.COLOR_NO_ALPHA:
 			return func(a: Color, b: Color) -> bool:
 				if a.r != b.r:
@@ -1215,7 +1278,6 @@ static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 					return a.g < b.g
 				else:
 					return a.b < b.b
-
 		Type.COLOR:
 			return func(a: Color, b: Color) -> bool:
 				if a.r != b.r:
@@ -1226,6 +1288,9 @@ static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 					return a.b < b.b
 				else:
 					return a.a < b.a
+		Type.CALLABLE:
+			# We can't sort rows by Callable.
+			return Callable()
 
 	return func(a: Variant, b: Variant) -> bool:
 		return a < b
@@ -1494,7 +1559,11 @@ func get_or_create_column_context_menu() -> PopupMenu:
 
 static func create_cell(type_hint: Dictionary) -> Dictionary[StringName, Variant]:
 	var text_line := TextLine.new()
-	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
+
+	if type_hint.type == Type.CALLABLE and type_hint.hint.type == Hint.BUTTON:
+		text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
+	else:
+		text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
 
 	var cell: Dictionary[StringName, Variant] = {
 		&"rect": Rect2i(),
