@@ -1,7 +1,19 @@
-[gd_resource type="Theme" load_steps=14 format=3 uid="uid://de8hd50qv2mti"]
+[gd_resource type="Theme" load_steps=17 format=3 uid="uid://de8hd50qv2mti"]
 
 [ext_resource type="Texture2D" uid="uid://dmmd5eby0i0dq" path="res://addons/table-view/icons/sort_ascending.svg" id="sort_ascending"]
 [ext_resource type="Texture2D" uid="uid://bqph2st4brflc" path="res://addons/table-view/icons/sort_descending.svg" id="sort_descending"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kei5s"]
+bg_color = Color(1, 1, 1, 0.1)
+corner_detail = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gin8q"]
+bg_color = Color(0.08, 0.09, 0.12, 0.5)
+corner_detail = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tq614"]
+bg_color = Color(0.08, 0.09, 0.12, 1)
+corner_detail = 1
 
 [sub_resource type="StyleBoxFlat" id="cell_edit"]
 content_margin_left = 4.0
@@ -93,6 +105,9 @@ TableView/constants/inner_margin_top = 4
 TableView/font_sizes/font_size = 14
 TableView/icons/sort_ascending = ExtResource("sort_ascending")
 TableView/icons/sort_descending = ExtResource("sort_descending")
+TableView/styles/button_hover = SubResource("StyleBoxFlat_kei5s")
+TableView/styles/button_normal = SubResource("StyleBoxFlat_gin8q")
+TableView/styles/button_pressed = SubResource("StyleBoxFlat_tq614")
 TableView/styles/cell_edit = SubResource("cell_edit")
 TableView/styles/cell_edit_empty = SubResource("cell_edit_empty")
 TableView/styles/column_hover = SubResource("column_hover")
