@@ -1069,6 +1069,9 @@ static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
 
 
 func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
+	if not is_editable():
+		return Callable()
+
 	match type:
 		Type.BOOL:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
