@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://1pwjt6un5gm4"]
+[gd_scene format=3 uid="uid://1pwjt6un5gm4"]
 
 [ext_resource type="Theme" uid="uid://de8hd50qv2mti" path="res://addons/table-view/resources/table_view.tres" id="1_dxj5b"]
 [ext_resource type="Script" uid="uid://dc7jcdu84cn8c" path="res://addons/table-view/scripts/table_view.gd" id="2_1kret"]
@@ -220,7 +220,7 @@ func _on_cell_rmb_clicked(row_idx: int, column_idx: int) -> void:
 	print(\"Cell RMB clicked: Row %d; Column %d\" % [row_idx, column_idx])
 "
 
-[node name="Example" type="PanelContainer"]
+[node name="Example" type="PanelContainer" unique_id=596754909]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -228,15 +228,15 @@ grow_horizontal = 2
 grow_vertical = 2
 script = SubResource("script")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=161155371]
 layout_mode = 2
 
-[node name="FilterLine" type="LineEdit" parent="VBoxContainer"]
+[node name="FilterLine" type="LineEdit" parent="VBoxContainer" unique_id=1886062669]
 layout_mode = 2
 placeholder_text = "Filter rows by name"
 clear_button_enabled = true
 
-[node name="TableView" type="Control" parent="VBoxContainer"]
+[node name="TableView" type="Control" parent="VBoxContainer" unique_id=815455489]
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("1_dxj5b")
