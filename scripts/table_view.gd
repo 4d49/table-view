@@ -53,10 +53,6 @@ signal multiple_rows_selected(selected_rows: PackedInt32Array)
 signal cell_value_changed(row_idx: int, column_idx: int, value: Variant)
 
 
-## If true, internal debug drawing will be enabled.
-const DEBUG_ENABLED: bool = false
-
-
 ## Defines the supported data types for table columns.
 enum Type {
 	BOOL = TYPE_BOOL,
@@ -198,7 +194,7 @@ var _sort_descending: Texture2D = null
 
 @warning_ignore("return_value_discarded")
 func _init() -> void:
-	self.set_clip_contents(not DEBUG_ENABLED)
+	self.set_clip_contents(true)
 	self.set_focus_mode(Control.FOCUS_CLICK)
 	self.set_mouse_filter(Control.MOUSE_FILTER_STOP)
 
@@ -229,122 +225,6 @@ func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_RESIZED:
 			update_table()
-
-		NOTIFICATION_DRAW when DEBUG_ENABLED:
-			if is_dirty():
-				update_table()
-
-			update_cell_editor_position_and_size()
-
-			draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.BLACK, 0.5))
-			if has_focus():
-				draw_rect(Rect2(Vector2.ZERO, get_size()), Color(Color.RED, 0.5), false)
-
-			draw_rect(_header, Color(Color.RED, 0.25))
-			draw_rect(_header, Color(Color.RED, 0.50), false)
-
-			var drawable_rect: Rect2 = get_drawable_rect()
-			draw_rect(drawable_rect, Color(Color.GREEN, 0.05))
-			draw_rect(drawable_rect, Color(Color.GREEN, 0.10), false)
-
-			var ci: RID = get_canvas_item()
-			var mouse_position: Vector2 = get_local_mouse_position()
-
-			#region draw rows
-			for row: Dictionary in _rows:
-				if not row.visible:
-					continue
-
-				var rect := scrolled_rect(row.rect)
-				if not drawable_rect.intersects(rect):
-					continue
-
-				var color: Color = row.color
-				if row.selected:
-					color = color.lerp(Color.WHITE, 0.5)
-				if rect.has_point(mouse_position):
-					color = color.lerp(Color.WHITE, 0.5)
-
-				draw_rect(rect, Color(color, 0.25))
-				draw_rect(rect, Color(color, 0.50), false)
-
-				for cell: Dictionary in row.cells:
-					rect = scrolled_rect(cell.rect)
-					if not drawable_rect.intersects(rect):
-						continue
-
-					rect = margin_rect(rect)
-
-					color = cell.color
-					if rect.has_point(mouse_position):
-						color = color.lerp(Color.WHITE, 0.5)
-
-					draw_rect(rect, Color(color, 0.25))
-					draw_rect(rect, Color(color, 0.50), false)
-
-					var type_hint: Dictionary = cell.type_hint
-					match type_hint.type:
-						Type.BOOL:
-							var texture: Texture2D = _checked if cell.value else _unchecked
-							texture.draw(ci, get_texture_position_in_rect(texture.get_size(), rect, HORIZONTAL_ALIGNMENT_LEFT))
-						Type.COLOR:
-							draw_rect(rect, cell.value)
-						Type.CALLABLE when type_hint.hint.type == Hint.BUTTON:
-							if rect.has_point(mouse_position):
-								if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-									draw_rect(rect, Color.RED)
-								else:
-									draw_rect(rect, Color(Color.RED, 0.5))
-							else:
-								draw_rect(rect, Color(Color.GRAY, 0.5))
-
-							draw_text_line(ci, cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
-						_:
-							draw_text_line(ci, cell.text_line, Color.WHITE, 2, Color.BLACK, rect)
-			#endregion
-
-			#region draw columns
-			for column: Dictionary in _columns:
-				if not column.visible:
-					continue
-
-				var rect := scrolled_rect_horizontal(column.rect)
-				if not drawable_rect.intersects(rect):
-					continue
-
-				var color: Color = column.color
-				if column.draw_mode == DrawMode.HOVER:
-					color = color.lerp(Color.WHITE, 0.5)
-
-				rect = margin_rect(rect)
-				draw_rect(rect, Color(color, 0.5))
-				draw_rect(rect, Color(color, 0.75), false)
-
-				var icon := get_sort_mode_icon(column.sort_mode)
-				if is_instance_valid(icon):
-					icon.draw(get_canvas_item(), get_texture_position_in_rect(icon.get_size(), rect, HORIZONTAL_ALIGNMENT_RIGHT))
-
-				draw_text_line(get_canvas_item(), column.text_line, Color.WHITE, 2, Color.BLACK, margin_rect(rect))
-			#endregion
-
-			#region draw grip
-			for column: Dictionary in _columns:
-				if not column.visible:
-					continue
-
-				var rect := scrolled_rect_horizontal(column.rect)
-				if not drawable_rect.intersects(rect):
-					continue
-
-				rect = grip_rect(rect)
-
-				var color: Color = Color.BLUE
-				if rect.has_point(get_local_mouse_position()):
-					color = color.lerp(Color.WHITE, 0.5)
-
-				draw_rect(rect, Color(color, 0.5))
-				draw_rect(rect, Color(color, 0.75), false)
-			#endregion
 
 		NOTIFICATION_DRAW:
 			if is_dirty():
@@ -965,7 +845,7 @@ static func create_column(
 	var text_line := TextLine.new()
 	text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
 
-	var column: Dictionary[StringName, Variant] = {
+	return {
 		&"rect": Rect2i(),
 		&"title": title,
 		&"tooltip": "",
@@ -983,11 +863,6 @@ static func create_column(
 		&"custom_width": 0.0,
 		&"minimum_width": COLUMN_MINIMUM_WIDTH,
 	}
-
-	if DEBUG_ENABLED:
-		column[&"color"] = Color(randf(), randf(), randf())
-
-	return column
 
 ## Returns a dictionary representing a `no hint` configuration.
 ## This is useful for cases where no specific hint is required for the column.
@@ -1606,17 +1481,12 @@ static func create_cell(type_hint: Dictionary) -> Dictionary[StringName, Variant
 	else:
 		text_line.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
 
-	var cell: Dictionary[StringName, Variant] = {
+	return {
 		&"rect": Rect2i(),
 		&"value": null,
 		&"text_line": text_line,
 		&"type_hint": type_hint,
 	}
-
-	if DEBUG_ENABLED:
-		cell[&"color"] = Color(randf(), randf(), randf())
-
-	return cell
 
 
 ## Creates a new row dictionary with cells based on the provided columns.
@@ -1627,17 +1497,12 @@ static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Var
 	for i: int in cells.size():
 		cells[i] = create_cell(columns[i][&"type_hint"])
 
-	var row: Dictionary[StringName, Variant] = {
+	return {
 		&"rect": Rect2i(),
 		&"cells": cells,
 		&"visible": true,
 		&"selected": false,
 	}
-
-	if DEBUG_ENABLED:
-		row[&"color"] = Color(randf(), randf(), randf())
-
-	return row
 
 
 ## Adds a new row to the table.
