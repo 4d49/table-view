@@ -141,6 +141,8 @@ var _h_scroll: HScrollBar = null
 var _columns: Array[Dictionary] = []
 var _rows: Array[Dictionary] = []
 
+var _row_y_offsets: PackedFloat32Array # Prefix sum
+
 var _canvas: RID = RID()
 
 var _cell_editor: Node = null
@@ -245,8 +247,8 @@ func _notification(what: int) -> void:
 			var mouse_position: Vector2 = get_local_mouse_position()
 			var draw_begun: bool = false
 
-			var idx: int = 0
-			for row: Dictionary in _rows:
+			for i: int in range(_row_y_offsets.bsearch(_v_scroll.get_value()), _rows.size()):
+				var row: Dictionary = _rows[i]
 				if not row.visible:
 					continue
 
@@ -262,7 +264,7 @@ func _notification(what: int) -> void:
 					_row_selected.draw(_canvas, rect)
 				elif rect.has_point(mouse_position):
 					_row_hover.draw(_canvas, rect)
-				elif idx % 2:
+				elif i % 2:
 					_row_alternate.draw(_canvas, rect)
 				else:
 					_row_normal.draw(_canvas, rect)
@@ -297,8 +299,6 @@ func _notification(what: int) -> void:
 							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
 						_:
 							draw_text_line(_canvas, cell.text_line, _font_color, _font_outline_size, _font_outline_color, margin_rect(rect))
-
-				idx += 1
 
 			for column: Dictionary in _columns:
 				if not column.visible:
@@ -732,19 +732,24 @@ func update_table() -> void:
 		var row_height: int = cell_height
 		var row_width: int = _header.size.x
 
-		for row: Dictionary in _rows:
+		_row_y_offsets.resize(_rows.size())
+
+		for i: int in _rows.size():
+			_row_y_offsets[i] = row_ofs
+
+			var row: Dictionary = _rows[i]
 			if not row.visible:
 				continue
 
 			var cells: Array[Dictionary] = row.cells
 			var cell_ofs: int = drawable_rect.position.x
 
-			for i: int in _columns.size():
-				if not _columns[i][&"visible"]:
+			for j: int in _columns.size():
+				if not _columns[j][&"visible"]:
 					continue
 
-				var cell: Dictionary = cells[i]
-				var cell_width: int = _columns[i].rect.size.x
+				var cell: Dictionary = cells[j]
+				var cell_width: int = _columns[j].rect.size.x
 
 				var text_line: TextLine = cell.text_line
 				text_line.set_width(margin_width(cell_width))
@@ -1868,6 +1873,7 @@ func find_cell_at_position(row_idx: int, point: Vector2) -> int:
 func clear() -> void:
 	_columns.clear()
 	_rows.clear()
+	_row_y_offsets.clear()
 
 	if is_instance_valid(_cell_editor):
 		_cell_editor.queue_free()
