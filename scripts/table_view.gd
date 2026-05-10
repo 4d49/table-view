@@ -1,39 +1,63 @@
 # Copyright (c) 2024-2025 Mansur Isaev and contributors - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 
+## A high-performance, customizable table view control.
+##
+## [TableView] allows for displaying data in a grid format with support for
+## various data types, custom cell editors, sorting, and selection modes.
 class_name TableView
 extends Control
 
 
+## Emitted when a column header is left-clicked.
 signal column_clicked(column_idx: int)
+## Emitted when a column header is right-clicked.
 signal column_rmb_clicked(column_idx: int)
+## Emitted when a column header is double-clicked.
 signal column_double_clicked(column_idx: int)
 
+## Emitted when a row is left-clicked.
 signal row_clicked(row_idx: int)
+## Emitted when a row is right-clicked.
 signal row_rmb_clicked(row_idx: int)
+## Emitted when a row is double-clicked.
 signal row_double_clicked(row_idx: int)
 
+## Emitted when a cell is left-clicked.
 signal cell_clicked(row_idx: int, column_idx: int)
+## Emitted when a cell is right-clicked.
 signal cell_rmb_clicked(row_idx: int, column_idx: int)
+## Emitted when a cell is double-clicked.
 signal cell_double_clicked(row_idx: int, column_idx: int)
 
+## Emitted when a new column is created.
 signal column_created(column_idx: int, type: Type, hint: Dictionary)
+## Emitted when a column is removed.
 signal column_removed(column_idx: int)
+## Emitted when a column's visibility changes.
 signal column_visibility_changed(column_idx: int, visibility: bool)
 
+## Emitted when a new row is created.
 signal row_created(row_idx: int)
+## Emitted when a row is removed.
 signal row_removed(row_idx: int)
 
+## Emitted when the selection changes.
 signal row_selection_changed
+## Emitted when a single row is selected.
 signal single_row_selected(row_idx: int)
+## Emitted when multiple rows are selected.
 signal multiple_rows_selected(selected_rows: PackedInt32Array)
 
+## Emitted when a cell's value is updated.
 signal cell_value_changed(row_idx: int, column_idx: int, value: Variant)
 
 
+## If true, internal debug drawing will be enabled.
 const DEBUG_ENABLED: bool = false
 
 
+## Defines the supported data types for table columns.
 enum Type {
 	BOOL = TYPE_BOOL,
 	INT = TYPE_INT,
@@ -44,6 +68,7 @@ enum Type {
 	CALLABLE = TYPE_CALLABLE,
 	MAX,
 }
+## Defines the visual or functional constraints (hints) for a column.
 enum Hint {
 	NONE,
 	RANGE,
@@ -53,22 +78,26 @@ enum Hint {
 	STRING_LENGTH,
 	BUTTON,
 }
+## Defines how a column header is drawn during interaction.
 enum DrawMode {
 	NORMAL,
 	PRESSED,
 	HOVER,
 }
+## Defines how columns behave when resizing.
 enum ColumnResizeMode {
 	STRETCH,
 	INTERACTIVE,
 	FIXED,
 #	RESIZE_TO_CONTENTS,
 }
+## Defines the sorting behavior of a column.
 enum SortMode {
 	NONE,
 	ASCENDING,
 	DESCENDING,
 }
+## Defines the row selection behavior.
 enum SelectMode {
 	DISABLED,
 	SINGLE_ROW,
@@ -76,23 +105,31 @@ enum SelectMode {
 }
 
 
+## The number of decimal places used when stringifying floats.
 const NUMBERS_AFTER_DOT = 3
+## The minimum width allowed for any column.
 const COLUMN_MINIMUM_WIDTH = 50.0
 
+## Constant representing an invalid column index.
 const INVALID_COLUMN: int = -1
+## Constant representing an invalid row index.
 const INVALID_ROW: int = -1
+## Constant representing an invalid cell index.
 const INVALID_CELL: int = -1
 
 # TODO: Move to theme in the future.
 const H_SEPARATION = 4
 
 
+## The mode used for resizing columns.
 @export var column_resize_mode: ColumnResizeMode = ColumnResizeMode.STRETCH:
 	set = set_column_resize_mode,
 	get = get_column_resize_mode
+## The mode used for selecting rows.
 @export var select_mode: SelectMode = SelectMode.SINGLE_ROW:
 	set = set_select_mode,
 	get = get_select_mode
+## Whether the table cells can be edited.
 @export var editable: bool = true:
 	set = set_editable,
 	get = is_editable
@@ -632,11 +669,12 @@ func _get_tooltip(at_position: Vector2) -> String:
 func margin_width(width: float) -> float:
 	return width - _inner_margin_left - _inner_margin_right
 
-## Returns [Rect2] with margin offsets.
+## Returns [Rect2] with margin offsets applied.
 func margin_rect(rect: Rect2) -> Rect2:
 	return rect.grow_individual(-_inner_margin_left, -_inner_margin_top, -_inner_margin_right, -_inner_margin_bottom)
 
 
+## Marks the table as needing a redraw.
 func mark_dirty() -> void:
 	if _dirty:
 		return
@@ -644,10 +682,12 @@ func mark_dirty() -> void:
 	_dirty = true
 	queue_redraw()
 
+## Returns [param true] if the table is marked as dirty and needs an update.
 func is_dirty() -> bool:
 	return _dirty
 
 
+## Sets the column resize mode.
 func set_column_resize_mode(n_resize_mode: ColumnResizeMode) -> void:
 	if column_resize_mode == n_resize_mode:
 		return
@@ -655,43 +695,53 @@ func set_column_resize_mode(n_resize_mode: ColumnResizeMode) -> void:
 	column_resize_mode = n_resize_mode
 	mark_dirty()
 
+## Returns the current column resize mode.
 func get_column_resize_mode() -> ColumnResizeMode:
 	return column_resize_mode
 
 
+## Sets the selection mode.
 func set_select_mode(n_select_mode: SelectMode) -> void:
 	if select_mode == n_select_mode:
 		return
 
 	select_mode = n_select_mode
 
+## Returns the current selection mode.
 func get_select_mode() -> SelectMode:
 	return select_mode
 
+## Returns [param true] if selection is disabled.
 func is_select_mode_disabled() -> bool:
 	return select_mode == SelectMode.DISABLED
 
+## Returns [param true] if selection is set to single row mode.
 func is_select_mode_single_row() -> bool:
 	return select_mode == SelectMode.SINGLE_ROW
 
+## Returns [param true] if selection is set to multi row mode.
 func is_select_mode_multi_row() -> bool:
 	return select_mode == SelectMode.MULTI_ROW
 
 
+## Sets whether cells in the table are editable.
 func set_editable(value: bool) -> void:
 	if value == false and is_instance_valid(_cell_editor):
 		_cell_editor.queue_free()
 
 	editable = value
 
+## Returns [param true] if cells are editable.
 func is_editable() -> bool:
 	return editable
 
 
+## Returns [param true] if the given [param point] is within the column header area.
 func header_has_point(point: Vector2) -> bool:
 	return _header.has_point(point)
 
 
+## Returns the rectangle area where the table content is actually drawn, accounting for scrollbars and margins.
 func get_drawable_rect() -> Rect2i:
 	var drawable_rect := Rect2i(Vector2i.ZERO, get_size())
 
@@ -706,6 +756,7 @@ func get_drawable_rect() -> Rect2i:
 	return drawable_rect.abs()
 
 
+## Returns the appropriate texture for the given [param sort_mode]. Returns null if mode is [param SortMode.NONE].
 func get_sort_mode_icon(sort_mode: SortMode) -> Texture2D:
 	match sort_mode:
 		SortMode.ASCENDING:
@@ -716,6 +767,7 @@ func get_sort_mode_icon(sort_mode: SortMode) -> Texture2D:
 	return null
 
 
+## Updates the internal [TextLine] of a column to accommodate an icon and text.
 func update_column_text_line(text_line: TextLine, icon: Texture2D, rect: Rect2) -> void:
 	rect = margin_rect(rect)
 
@@ -736,6 +788,7 @@ func update_column_text_line(text_line: TextLine, icon: Texture2D, rect: Rect2) 
 	text_line.set_width(text_width)
 
 @warning_ignore("unsafe_call_argument", "return_value_discarded", "narrowing_conversion")
+## Recalculates the layout of all columns and rows. Should be called when the table structure changes.
 func update_table() -> void:
 	if _columns.is_empty():
 		return
@@ -842,6 +895,7 @@ func update_table() -> void:
 	queue_redraw()
 
 
+## Updates the position and size of the currently active cell editor to match its cell rect.
 func update_cell_editor_position_and_size() -> void:
 	if not is_instance_valid(_cell_editor) or not _cell_editor.has_meta(&"cell"):
 		return
@@ -854,12 +908,14 @@ func update_cell_editor_position_and_size() -> void:
 		_cell_editor.set_size(rect.size)
 
 
+## Returns a string representation of a [param color] without the alpha channel.
 static func color_to_string_no_alpha(color: Color) -> String:
 	return (
 		  "R: " + str(color.r).pad_decimals(NUMBERS_AFTER_DOT) +
 		"\nG: " + str(color.g).pad_decimals(NUMBERS_AFTER_DOT) +
 		"\nB: " + str(color.b).pad_decimals(NUMBERS_AFTER_DOT)
 	)
+## Returns a string representation of a [param color] including the alpha channel.
 static func color_to_string(color: Color) -> String:
 	return (
 			  "R: " + str(color.r).pad_decimals(NUMBERS_AFTER_DOT) +
@@ -869,6 +925,7 @@ static func color_to_string(color: Color) -> String:
 		)
 
 
+## Creates a type hint dictionary containing metadata for a cell.
 static func create_type_hint(
 		type: Type,
 		hint: Dictionary,
@@ -884,6 +941,7 @@ static func create_type_hint(
 	}
 
 
+## Assigns a custom node to be used as the cell editor.
 func set_cell_editor(cell_editor: Node) -> void:
 	if is_instance_valid(_cell_editor):
 		_cell_editor.queue_free()
@@ -894,6 +952,7 @@ func set_cell_editor(cell_editor: Node) -> void:
 	_cell_editor = cell_editor
 
 
+## Creates a new column dictionary with initialized properties.
 static func create_column(
 		title: String,
 		type: Type,
@@ -936,12 +995,7 @@ static func hint_none() -> Dictionary:
 	const HINT_NONE: Dictionary[StringName, Variant] = {&"type": Hint.NONE}
 	return HINT_NONE
 
-## Constructs a range hint dictionary with specified minimum, maximum, and step values.[br]
-## [br][param min]: The minimum value of the range.
-## [br][param max]: The maximum value of the range.
-## [br][param step]: The increment value for the range (default: 0.001).
-## [codeblock] func _ready() -> void:
-##   var column = table_view.add_column("Range", TableView.Type.FLOAT, TableView.hint_range(0.0, 1.0, 0.1))
+## Constructs a range hint dictionary with specified minimum, maximum, and step values.
 static func hint_range(min: float, max: float, step: float = 0.001) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.RANGE, &"min": min, &"max": max, &"step": step}
 	hint.make_read_only()
@@ -949,19 +1003,6 @@ static func hint_range(min: float, max: float, step: float = 0.001) -> Dictionar
 	return hint
 
 ## Creates a dictionary representing an enumeration hint, using a dictionary of enumerated values.
-## [br][br][param enumeration]: A dictionary of possible enumerated values.
-## [codeblock]
-## enum Type {
-##   ARMOR,
-##   BOOK,
-##   KEY,
-##   MISC,
-##   POTION,
-##   WEAPON,
-## }
-##
-## func _ready() -> void:
-##   var column = table_view.add_column("Enum", TableView.Type.INT, TableView.hint_enum(Type))
 static func hint_enum(enumeration: Dictionary) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.ENUM,  &"enum": enumeration}
 	hint.make_read_only()
@@ -969,17 +1010,6 @@ static func hint_enum(enumeration: Dictionary) -> Dictionary:
 	return hint
 
 ## Builds a dictionary representing a flags hint, where individual flags are provided in a dictionary.
-## [br][br][param flags]: A dictionary defining flag names and their corresponding values.
-## [codeblock]
-## enum Flags {
-##   EQUIPABLE = 1 << 0,
-##   STACKABLE = 1 << 1,
-##   CONSUMABLE = 1 << 2,
-##   TRADABLE = 1 << 3,
-## }
-##
-## func _ready() -> void:
-##   var column = table_view.add_column("Flags", TableView.Type.INT, TableView.hint_flags(Flags))
 static func hint_flags(flags: Dictionary) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.FLAGS, &"flags": flags}
 	hint.make_read_only()
@@ -987,12 +1017,6 @@ static func hint_flags(flags: Dictionary) -> Dictionary:
 	return hint
 
 ## Creates a dictionary for a flags hint using an array of flag names as input.
-## Each flag name is mapped to a unique bit position.
-## [br][br][param flags]: An array of flag names.
-## [codeblock]
-## func _ready() -> void:
-##   var column = table_view.add_column("Flags", TableView.Type.INT, TableView.hint_flags_string(["EQUIPABLE", "STACKABLE", "CONSUMABLE", "TRADABLE"]))
-## [/codeblock]Internally converts the array into a dictionary where each flag is assigned a bitmask value.
 static func hint_flags_string(flags: PackedStringArray) -> Dictionary:
 	var dict: Dictionary[String, int] = {}
 
@@ -1004,14 +1028,12 @@ static func hint_flags_string(flags: PackedStringArray) -> Dictionary:
 
 	return hint
 
-## Returns a dictionary representing a color hint that excludes the alpha(transparency) channel.
-## This is useful for columns that require color input but should not support transparency.
+## Returns a dictionary representing a color hint that excludes the alpha channel.
 static func hint_color_no_alpha() -> Dictionary:
 	const HINT_COLOR_NO_ALPHA: Dictionary[StringName, Variant] = {&"type": Hint.COLOR_NO_ALPHA}
 	return HINT_COLOR_NO_ALPHA
 
 ## Creates a dictionary hint that enforces a maximum length for a string input.
-## [br][param string_length]: The maximum allowed length for the string.
 static func hint_string_length(string_length: int) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.STRING_LENGTH, &"length": maxi(string_length, 0)}
 	hint.make_read_only()
@@ -1025,11 +1047,7 @@ static func hint_button(text: String) -> Dictionary:
 
 	return hint
 
-
-
-
-## Returns a [Callable] that converts values of a specific [param type] into their string representation.
-## This method ensures values are appropriately formatted as strings based on their type and associated hint.
+## Returns a [Callable] function that converts values of a specific [param type] into their string representation.
 static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
 	match type:
 		Type.INT when hint.type == Hint.ENUM:
@@ -1061,13 +1079,13 @@ static func default_stringifier(type: Type, hint: Dictionary) -> Callable:
 			return color_to_string_no_alpha if hint.type == Hint.COLOR_NO_ALPHA else color_to_string
 
 		Type.CALLABLE when hint.type == Hint.BUTTON:
-			# We ignore the cell value (there should be a Callable) and use the text stored in `Hint`.
 			return func button_text(_value: Variant) -> String:
 				return hint.text
 
 	return str
 
 
+## Returns a [Callable] function that handles the editing logic for different types of data.
 func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
 	if not is_editable():
 		return Callable()
@@ -1250,7 +1268,6 @@ func _handle_button_input_event(input: InputEventMouseButton, cell: Dictionary, 
 	accept_event()
 
 ## Returns a [Callable] function that handles editing logic for different types of data [param type] and associated hints.
-## The returned function customizes the editor used to modify cell values based on the provided type and hint.
 func default_input_handler(type: Type, hint: Dictionary) -> Callable:
 	if type == Type.CALLABLE and hint.type == Hint.BUTTON:
 		return _handle_button_input_event
@@ -1267,7 +1284,6 @@ func default_input_handler(type: Type, hint: Dictionary) -> Callable:
 		accept_event()
 
 ## Returns a [Callable] function to compare two values of a specific [param type] with an optional hint.
-## The returned comparator is used for sorting.
 static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 	match type:
 		Type.STRING, Type.STRING_NAME:
@@ -1292,13 +1308,14 @@ static func default_comparator(type: Type, hint: Dictionary) -> Callable:
 				else:
 					return a.a < b.a
 		Type.CALLABLE:
-			# We can't sort rows by Callable.
 			return Callable()
 
 	return func(a: Variant, b: Variant) -> bool:
 		return a < b
 
 
+## Adds a new column to the table.
+## Returns the index of the newly created column.
 func add_column(
 		title: String,
 		type: Type,
@@ -1331,6 +1348,7 @@ func add_column(
 
 	return _columns.size() - 1
 
+## Removes the column at [param column_idx].
 func remove_column(column_idx: int) -> void:
 	_columns.remove_at(column_idx)
 
@@ -1341,6 +1359,7 @@ func remove_column(column_idx: int) -> void:
 	mark_dirty()
 
 
+## Resizes the number of columns in the table.
 func set_column_count(new_size: int) -> void:
 	var old_size: int = _columns.size()
 	if old_size == new_size:
@@ -1374,10 +1393,12 @@ func set_column_count(new_size: int) -> void:
 
 	mark_dirty()
 
+## Returns the current number of columns.
 func get_column_count() -> int:
 	return _columns.size()
 
 
+## Sets the title of the column at [param column_idx].
 func set_column_title(column_idx: int, title: String) -> void:
 	var column: Dictionary = _columns[column_idx]
 	if column.title == title:
@@ -1391,18 +1412,21 @@ func set_column_title(column_idx: int, title: String) -> void:
 
 	queue_redraw()
 
+## Returns the title of the column at [param column_idx].
 func get_column_title(column_idx: int) -> String:
 	return _columns[column_idx][&"title"]
 
 
+## Sets the tooltip text for the column at [param column_idx].
 func set_column_tooltip(column_idx: int, tooltip: String) -> void:
 	_columns[column_idx][&"tooltip"] = tooltip
 
+## Returns the tooltip text of the column at [param column_idx].
 func get_column_tooltip(column_idx: int) -> String:
 	return _columns[column_idx][&"tooltip"]
 
 
-## Returns [param true] if the column can be hidden.
+## Returns [param true] if the column can be hidden without violating minimum visible column constraints.
 func can_hide_column(column_idx: int) -> bool:
 	if _columns.size() <= 1:
 		return false
@@ -1414,7 +1438,8 @@ func can_hide_column(column_idx: int) -> bool:
 
 	return visible_columns > 0
 
-## Sets column visibility. Returns [param true] if updated successfully; otherwise, [param false].
+## Sets the visibility of the column at [param column_idx].
+## Returns [param true] if updated successfully; otherwise, [param false].
 func set_column_visible(column_idx: int, visible: bool) -> bool:
 	if _columns[column_idx][&"visible"] == visible:
 		return false
@@ -1427,6 +1452,7 @@ func set_column_visible(column_idx: int, visible: bool) -> bool:
 
 	return true
 
+## Returns [param true] if the column at [param column_idx] is visible.
 func is_column_visible(column_idx: int) -> bool:
 	return _columns[column_idx][&"visible"]
 
@@ -1437,6 +1463,7 @@ func set_column_custom_width(column_idx: int, custom_width: int) -> void:
 
 	_columns[column_idx][&"custom_width"] = maxf(custom_width, 0.0)
 	mark_dirty()
+
 ## Returns the custom width of a column.
 func get_column_custom_width(column_idx: int) -> int:
 	return _columns[column_idx][&"custom_width"]
@@ -1448,6 +1475,7 @@ func set_column_minimum_width(column_idx: int, minimum_width: int) -> void:
 
 	_columns[column_idx][&"minimum_width"] = maxf(minimum_width, COLUMN_MINIMUM_WIDTH)
 	mark_dirty()
+
 ## Returns the minimum width of a column.
 func get_column_minimum_width(column_idx: int) -> int:
 	return _columns[column_idx][&"minimum_width"]
@@ -1457,6 +1485,7 @@ func get_column_width(column_idx: int) -> int:
 	return maxi(_columns[column_idx][&"custom_width"], _columns[column_idx][&"minimum_width"])
 
 
+## Updates the type, hint, and handlers for a column at [param column_idx].
 func set_column_type(
 		column_idx: int,
 		type: Type,
@@ -1474,44 +1503,53 @@ func set_column_type(
 	type_hint.stringifier = stringifier
 	type_hint.input_handler = input_handler
 
+## Returns the [param Type] of the column at [param column_idx].
 func get_column_type(column_idx: int) -> Type:
 	return _columns[column_idx][&"type_hint"][&"type"]
 
+## Returns the [param Hint] of the column at [param column_idx].
 func get_column_hint(column_idx: int) -> Hint:
 	return _columns[column_idx][&"type_hint"][&"hint"]
 
+## Returns the hint string associated with the column at [param column_idx].
 func get_column_hint_string(column_idx: int) -> String:
 	return _columns[column_idx][&"type_hint"][&"hint_string"]
 
-## Sets the [Callable] that will be used to sort the column. If set invalid [Callable], sorting for the column will be disabled.
+## Sets the [Callable] used to compare values for sorting in the specified column.
 func set_column_comparator(column_idx: int, comparator: Callable) -> void:
 	_columns[column_idx][&"comparator"] = comparator
 
+## Returns the comparator [Callable] for the column at [param column_idx].
 func get_column_comparator(column_idx: int) -> Callable:
 	return _columns[column_idx][&"comparator"]
 
 
+## Sets custom metadata for a column.
 func set_column_metadata(column_idx: int, metadata: Variant) -> void:
 	if metadata == null:
 		_columns[column_idx].erase(&"metadata")
 	else:
 		_columns[column_idx][&"metadata"] = metadata
 
+## Returns the metadata for a column, or [param default] if not set.
 func get_column_metadata(column_idx: int, default: Variant = null) -> Variant:
 	return _columns[column_idx].get(&"metadata", default)
 
-## Returns the column header's rectangle.
+## Returns the rectangle area occupied by the column header.
 func get_column_rect(column_idx: int) -> Rect2:
 	return _columns[column_idx][&"rect"]
 
+## Returns the rectangle area of the column's resizing grip.
 func get_column_grip_rect(column_idx: int) -> Rect2:
 	return grip_rect(_columns[column_idx][&"rect"])
 
 
+## Returns the current [param SortMode] of the column.
 func get_column_sort_mode(column_idx: int) -> SortMode:
 	return _columns[column_idx][&"sort_mode"]
 
 
+## Sorts the table rows based on the values in the specified [param column_idx].
 func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 	if sort_mode == SortMode.NONE:
 		return
@@ -1541,7 +1579,6 @@ func sort_by_column(column_idx: int, sort_mode: SortMode) -> void:
 
 ## Returns an existing [PopupMenu] or creates a new one to control
 ## table column visibility, shown when right-clicking a column.
-## The object is created once and not automatically created with the [TableView].
 func get_or_create_column_context_menu() -> PopupMenu:
 	if not is_instance_valid(_column_context_menu):
 		_column_context_menu = PopupMenu.new()
@@ -1560,6 +1597,7 @@ func get_or_create_column_context_menu() -> PopupMenu:
 
 
 
+## Creates a new cell dictionary with the provided type hint.
 static func create_cell(type_hint: Dictionary) -> Dictionary[StringName, Variant]:
 	var text_line := TextLine.new()
 
@@ -1581,6 +1619,7 @@ static func create_cell(type_hint: Dictionary) -> Dictionary[StringName, Variant
 	return cell
 
 
+## Creates a new row dictionary with cells based on the provided columns.
 static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Variant]:
 	var cells: Array[Dictionary] = []
 	cells.resize(columns.size())
@@ -1601,12 +1640,15 @@ static func create_row(columns: Array[Dictionary]) -> Dictionary[StringName, Var
 	return row
 
 
+## Adds a new row to the table.
+## Returns the index of the newly created row.
 func add_row() -> int:
 	_rows.push_back(create_row(_columns))
 	row_created.emit(_rows.size() - 1)
 
 	return _rows.size() - 1
 
+## Removes the row at [param row_idx].
 func remove_row(row_idx: int) -> void:
 	_rows.remove_at(row_idx)
 	row_removed.emit(row_idx)
@@ -1614,6 +1656,7 @@ func remove_row(row_idx: int) -> void:
 	mark_dirty()
 
 
+## Sets the number of rows in the table.
 func set_row_count(new_size: int) -> void:
 	var old_size: int = _rows.size()
 	if old_size == new_size:
@@ -1630,10 +1673,12 @@ func set_row_count(new_size: int) -> void:
 
 	mark_dirty()
 
+## Returns the current number of rows.
 func get_row_count() -> int:
 	return _rows.size()
 
 
+## Sets whether a specific row is visible.
 func set_row_visible(row_idx: int, visible: bool) -> void:
 	var row: Dictionary = _rows[row_idx]
 	if row.visible == visible:
@@ -1642,10 +1687,11 @@ func set_row_visible(row_idx: int, visible: bool) -> void:
 	row.visible = visible
 	mark_dirty()
 
+## Returns [param true] if the row at [param row_idx] is visible.
 func is_row_visible(row_idx: int) -> bool:
 	return _rows[row_idx][&"visible"]
 
-## Returns the count of visible rows, unlike [method get_visible_rows], which returns an array.
+## Returns the count of visible rows.
 func get_visible_rows_count() -> int:
 	var visible_rows: int = 0
 
@@ -1655,7 +1701,7 @@ func get_visible_rows_count() -> int:
 
 	return visible_rows
 
-## Returns an array of visible row indices.
+## Returns an array of indices of all visible rows.
 func get_visible_rows() -> PackedInt32Array:
 	var visible_rows := PackedInt32Array()
 
@@ -1666,16 +1712,19 @@ func get_visible_rows() -> PackedInt32Array:
 	return visible_rows
 
 
+## Sets custom metadata for a row.
 func set_row_metadata(row_idx: int, metadata: Variant) -> void:
 	if metadata == null:
 		_rows[row_idx].erase(&"metadata")
 	else:
 		_rows[row_idx][&"metadata"] = metadata
 
+## Returns the metadata for a row, or [param default] if not set.
 func get_row_metadata(row_idx: int, default: Variant = null) -> Variant:
 	return _rows[row_idx].get(&"metadata", default)
 
 
+## Selects a single row. If [param SelectMode.MULTI_ROW] is active, it toggles selection.
 func select_single_row(row_idx: int) -> void:
 	for i: int in _rows.size():
 		_rows[i][&"selected"] = i == row_idx
@@ -1683,6 +1732,7 @@ func select_single_row(row_idx: int) -> void:
 	row_selection_changed.emit()
 	queue_redraw()
 
+## Selects a row based on the current [param SelectMode].
 func select_row(row_idx: int) -> void:
 	match get_select_mode():
 		SelectMode.SINGLE_ROW:
@@ -1695,6 +1745,7 @@ func select_row(row_idx: int) -> void:
 	row_selection_changed.emit()
 	queue_redraw()
 
+## Deselects a row based on the current [param SelectMode].
 func deselect_row(row_idx: int) -> void:
 	match get_select_mode():
 		SelectMode.SINGLE_ROW, SelectMode.MULTI_ROW:
@@ -1705,16 +1756,18 @@ func deselect_row(row_idx: int) -> void:
 	row_selection_changed.emit()
 	queue_redraw()
 
+## Returns [param true] if the row at [param row_idx] is selected.
 func is_row_selected(row_idx: int) -> bool:
 	return _rows[row_idx][&"selected"]
 
+## Toggles the selection state of a row.
 func toggle_row_selected(row_idx: int) -> void:
 	if is_row_selected(row_idx):
 		deselect_row(row_idx)
 	else:
 		select_row(row_idx)
 
-## Returns the count of selected rows, unlike [method get_selected_rows], which returns an array.
+## Returns the count of selected rows.
 func get_selected_rows_count() -> int:
 	if is_select_mode_disabled():
 		return 0
@@ -1734,7 +1787,7 @@ func get_selected_rows_count() -> int:
 
 	return selected_rows
 
-## Returns an array of selected row indices.
+## Returns an array of indices of all selected rows.
 func get_selected_rows() -> PackedInt32Array:
 	match get_select_mode():
 		SelectMode.SINGLE_ROW:
@@ -1754,6 +1807,7 @@ func get_selected_rows() -> PackedInt32Array:
 	return PackedInt32Array()
 
 
+## Selects all visible rows.
 func select_all_rows() -> void:
 	if is_select_mode_multi_row():
 		for row: Dictionary in _rows:
@@ -1764,6 +1818,7 @@ func select_all_rows() -> void:
 	row_selection_changed.emit()
 	queue_redraw()
 
+## Deselects all rows.
 func deselect_all_rows() -> void:
 	for row: Dictionary in _rows:
 		row.selected = false
@@ -1774,6 +1829,7 @@ func deselect_all_rows() -> void:
 
 
 
+## Sets a cell value without emitting the [signal cell_value_changed] signal.
 func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> bool:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
 	if is_same(cell.value, value):
@@ -1792,14 +1848,17 @@ func set_cell_value_no_signal(row_idx: int, column_idx: int, value: Variant) -> 
 
 	return true
 
+## Sets the value of a cell and emits [signal cell_value_changed].
 func set_cell_value(row_idx: int, column_idx: int, value: Variant) -> void:
 	if set_cell_value_no_signal(row_idx, column_idx, value):
 		cell_value_changed.emit(row_idx, column_idx, value)
 
+## Returns the value of the cell at [param row_idx] and [param column_idx].
 func get_cell_value(row_idx: int, column_idx: int) -> Variant:
 	return _rows[row_idx][&"cells"][column_idx][&"value"]
 
 
+## Sets custom metadata for a cell.
 func set_cell_metadata(row_idx: int, column_idx: int, metadata: Variant) -> void:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
 
@@ -1808,11 +1867,13 @@ func set_cell_metadata(row_idx: int, column_idx: int, metadata: Variant) -> void
 	else:
 		cell[&"metadata"] = metadata
 
+## Returns the metadata for a cell, or [param default] if not set.
 func get_cell_metadata(row_idx: int, column_idx: int, default: Variant = null) -> Variant:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
 	return cell.get(&"metadata", default)
 
 
+## Updates the type, hint, and handlers for a specific cell.
 func set_cell_custom_type(
 		row_idx: int,
 		column_idx: int,
@@ -1829,19 +1890,24 @@ func set_cell_custom_type(
 		input_handler,
 	)
 
+## Returns the [param Type] of the cell at [param row_idx] and [param column_idx].
 func get_cell_type(row_idx: int, column_idx: int) -> Type:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"type"]
 
+## Returns the [param Hint] of the cell at [param row_idx] and [param column_idx].
 func get_cell_hint(row_idx: int, column_idx: int) -> Hint:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"hint"]
 
+## Returns the hint string associated with the cell at [param row_idx] and [param column_idx].
 func get_cell_hint_string(row_idx: int, column_idx: int) -> String:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"hint_string"]
 
+## Returns the input handler [Callable] for the cell at [param row_idx] and [param column_idx].
 func get_cell_input_handler(row_idx: int, column_idx: int) -> Callable:
 	return _rows[row_idx][&"cells"][column_idx][&"type_hint"][&"input_handler"]
 
 
+## Returns a string representation of a cell's value.
 func stringify_cell(row_idx: int, column_idx: int) -> String:
 	var cell: Dictionary = _rows[row_idx][&"cells"][column_idx]
 
@@ -1855,6 +1921,8 @@ func stringify_cell(row_idx: int, column_idx: int) -> String:
 	return str(cell.value)
 
 
+## Filters the table rows based on a [param callable] predicate.
+## Rows that do not meet the criteria will be hidden and deselected.
 func filter_rows_by_callable(column_idx: int, callable: Callable) -> void:
 	if not callable.is_valid():
 		return
@@ -1869,6 +1937,7 @@ func filter_rows_by_callable(column_idx: int, callable: Callable) -> void:
 	mark_dirty()
 
 
+## Finds the column index at the given [param point]. Returns [param INVALID_COLUMN] if not found.
 func find_column_at_position(point: Vector2) -> int:
 	for i: int in _columns.size():
 		var column: Dictionary = _columns[i]
@@ -1878,6 +1947,7 @@ func find_column_at_position(point: Vector2) -> int:
 	return INVALID_COLUMN
 
 
+## Returns the rectangle area representing the column's resizing grip.
 func grip_rect(rect: Rect2) -> Rect2:
 	const GRIP_SIZE = 6
 
@@ -1888,6 +1958,7 @@ func grip_rect(rect: Rect2) -> Rect2:
 		rect.size.y,
 	)
 
+## Finds the index of a resizable column at the given [param point].
 func find_resizable_column(point: Vector2) -> int:
 	if not _header.has_point(point):
 		return INVALID_COLUMN
@@ -1903,6 +1974,7 @@ func find_resizable_column(point: Vector2) -> int:
 	return INVALID_COLUMN
 
 
+## Finds the row index at the given [param point]. Returns [param INVALID_ROW] if not found.
 func find_row_at_position(point: Vector2) -> int:
 	for i: int in _rows.size():
 		var row: Dictionary = _rows[i]
@@ -1914,6 +1986,7 @@ func find_row_at_position(point: Vector2) -> int:
 
 	return INVALID_ROW
 
+## Finds the cell index at the given [param point] within [param row_idx].
 func find_cell_at_position(row_idx: int, point: Vector2) -> int:
 	var cells: Array[Dictionary] = _rows[row_idx][&"cells"]
 
@@ -1926,6 +1999,7 @@ func find_cell_at_position(row_idx: int, point: Vector2) -> int:
 
 
 
+## Clears all columns and rows from the table.
 func clear() -> void:
 	_columns.clear()
 	_rows.clear()
@@ -1936,18 +2010,20 @@ func clear() -> void:
 	queue_redraw()
 
 
-
-
+## Converts a local position to a scrolled position.
 func scrolled_position(point: Vector2) -> Vector2:
 	return Vector2(_h_scroll.get_value(), _v_scroll.get_value()) + point
 
+## Converts a local position to a horizontally scrolled position.
 func scrolled_position_horizontal(point: Vector2) -> Vector2:
 	return Vector2(_h_scroll.get_value(), 0.0) + point
 
 
+## Returns a [Rect2] representing the rect after applying scroll offsets.
 func scrolled_rect(rect: Rect2, horizontal_only := false) -> Rect2:
 	return Rect2(rect.position - Vector2(_h_scroll.get_value(), _v_scroll.get_value()), rect.size)
 
+## Returns a [Rect2] representing the rect after applying horizontal scroll offsets.
 func scrolled_rect_horizontal(rect: Rect2) -> Rect2:
 	return Rect2(rect.position - Vector2(_h_scroll.get_value(), 0.0), rect.size)
 
@@ -2013,6 +2089,7 @@ func _on_scroll_value_changed(_value: float) -> void:
 
 
 
+## Renders text within a rectangle with optional outline.
 static func draw_text_line(ci: RID, text_line: TextLine, font_color: Color, outline_size: int, outline_color: Color, rect: Rect2) -> void:
 	var text_position := Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 - text_line.get_size().y * 0.5)
 
@@ -2022,6 +2099,7 @@ static func draw_text_line(ci: RID, text_line: TextLine, font_color: Color, outl
 	text_line.draw(ci, text_position, font_color)
 
 
+## Calculates the centered position for a texture within a rect based on alignment.
 static func get_texture_position_in_rect(texture_size: Vector2, rect: Rect2, alignment: HorizontalAlignment) -> Vector2:
 	var horizontal_position: float
 	match alignment:
