@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://1pwjt6un5gm4"]
 
 [ext_resource type="Theme" uid="uid://de8hd50qv2mti" path="res://addons/table-view/resources/table_view.tres" id="1_dxj5b"]
-[ext_resource type="Script" uid="uid://dc7jcdu84cn8c" path="res://addons/table-view/scripts/table_view.gd" id="2_1kret"]
+[ext_resource type="Script" uid="uid://dc7jcdu84cn8c" path="res://addons/table-view/scripts/table_view.gd" id="2_ly4jg"]
 
 [sub_resource type="GDScript" id="script"]
 script/source = "# Copyright (c) 2024-2025 Mansur Isaev and contributors - MIT License
@@ -39,7 +39,7 @@ const WEIGHT_MAX = 10.0
 
 
 @onready var table_view: TableView = $VBoxContainer/TableView
-@export_range(0, 10_000) var data_size: int = 10_000
+@export_range(0, 100_000) var data_size: int = 10_000
 
 
 var column_menu: PopupMenu = null
@@ -227,6 +227,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = SubResource("script")
+data_size = 100000
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=161155371]
 layout_mode = 2
@@ -240,7 +241,7 @@ clear_button_enabled = true
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("1_dxj5b")
-script = ExtResource("2_1kret")
+script = ExtResource("2_ly4jg")
 
 [connection signal="text_changed" from="VBoxContainer/FilterLine" to="." method="_on_filter_line_text_changed"]
 [connection signal="cell_clicked" from="VBoxContainer/TableView" to="." method="_on_cell_clicked"]
