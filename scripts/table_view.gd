@@ -1319,18 +1319,20 @@ func can_hide_column(column_idx: int) -> bool:
 	return visible_columns > 0
 
 ## Sets the visibility of the column at [param column_idx].
-## Returns [param true] if updated successfully; otherwise, [param false].
-func set_column_visible(column_idx: int, visible: bool) -> bool:
-	if _columns[column_idx][&"visible"] == visible:
-		return false
+## If [param visible] is [param false], the operation is ignored if it would leave no visible columns.
+func set_column_visible(column_idx: int, visible: bool) -> void:
+	var column: Dictionary = _columns[column_idx]
+	if column.visible == visible:
+		return
 
+	# Если мы хотим скрыть колонку, проверяем, можно ли это сделать
 	if not visible and not can_hide_column(column_idx):
-		return false
+		return
 
-	_columns[column_idx][&"visible"] = visible
+	column.visible = visible
 	column_visibility_changed.emit(column_idx, visible)
 
-	return true
+	mark_dirty()
 
 ## Returns [param true] if the column at [param column_idx] is visible.
 func is_column_visible(column_idx: int) -> bool:
