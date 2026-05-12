@@ -1330,6 +1330,8 @@ func set_column_visible(column_idx: int, visible: bool) -> bool:
 	_columns[column_idx][&"visible"] = visible
 	column_visibility_changed.emit(column_idx, visible)
 
+	mark_dirty()
+
 	return true
 
 ## Returns [param true] if the column at [param column_idx] is visible.
