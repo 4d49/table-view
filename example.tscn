@@ -37,6 +37,8 @@ const COST_MAX = 10_000
 const WEIGHT_MIN = 0.0
 const WEIGHT_MAX = 10.0
 
+const STATUS: PackedStringArray = [\"Active\", \"Inactive\", \"Suspended\", \"Deleted\"]
+
 
 @onready var table_view: TableView = $VBoxContainer/TableView
 @export_range(0, 100_000) var data_size: int = 10_000
@@ -70,6 +72,10 @@ func _ready() -> void:
 	# Create an enum column type.
 	var type := table_view.add_column(\"Type\", TableView.Type.INT, TableView.hint_enum(Type))
 	table_view.set_column_minimum_width(type, 100)
+
+	var status := table_view.add_column(\"Status\", TableView.Type.STRING, TableView.hint_string_enum(STATUS))
+	table_view.set_column_minimum_width(status, 100)
+
 	# Create a flags column type.
 	var flags := table_view.add_column(\"Flags\", TableView.Type.INT, TableView.hint_flags(Flags))
 	table_view.set_column_minimum_width(flags, 125)

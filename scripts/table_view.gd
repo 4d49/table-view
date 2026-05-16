@@ -1,5 +1,5 @@
-# Copyright (c) 2024-2025 Mansur Isaev and contributors - MIT License
-# See `LICENSE.md` included in the source distribution for details.
+# Copyright (c) 2024-2026 Mansur Isaev and contributors - MIT License
+# See `LICENSE` included in the source distribution for details.
 
 ## A high-performance, customizable table view control.
 ##
@@ -870,7 +870,7 @@ static func create_column(
 	}
 
 ## Returns a dictionary representing a `no hint` configuration.
-## This is useful for cases where no specific hint is required for the column.
+## This is used when no specific property hint is required for a column.
 static func hint_none() -> Dictionary:
 	const HINT_NONE: Dictionary[StringName, Variant] = {&"type": Hint.NONE}
 	return HINT_NONE
@@ -882,21 +882,32 @@ static func hint_range(min: float, max: float, step: float = 0.001) -> Dictionar
 
 	return hint
 
-## Creates a dictionary representing an enumeration hint, using a dictionary of enumerated values.
+## Creates a dictionary representing an enumeration hint, using a dictionary
+## where keys are labels and values are the corresponding integer values.
 static func hint_enum(enumeration: Dictionary) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.ENUM,  &"enum": enumeration}
 	hint.make_read_only()
 
 	return hint
 
-## Builds a dictionary representing a flags hint, where individual flags are provided in a dictionary.
+## Creates a dictionary representing an enumeration hint, using an array
+## of strings as the available options.
+static func hint_string_enum(strings: PackedStringArray) -> Dictionary:
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.ENUM, &"enum": strings}
+	hint.make_read_only()
+
+	return hint
+
+## Builds a dictionary representing a flags hint, where individual flags
+## are provided as a dictionary mapping names to bitwise values.
 static func hint_flags(flags: Dictionary) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.FLAGS, &"flags": flags}
 	hint.make_read_only()
 
 	return hint
 
-## Creates a dictionary for a flags hint using an array of flag names as input.
+## Creates a dictionary for a flags hint by automatically generating bitmasks
+## from an array of flag names.
 static func hint_flags_string(flags: PackedStringArray) -> Dictionary:
 	var dict: Dictionary[String, int] = {}
 
@@ -913,14 +924,14 @@ static func hint_color_no_alpha() -> Dictionary:
 	const HINT_COLOR_NO_ALPHA: Dictionary[StringName, Variant] = {&"type": Hint.COLOR_NO_ALPHA}
 	return HINT_COLOR_NO_ALPHA
 
-## Creates a dictionary hint that enforces a maximum length for a string input.
+## Creates a dictionary hint that enforces a maximum character length for a string input.
 static func hint_string_length(string_length: int) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.STRING_LENGTH, &"length": maxi(string_length, 0)}
 	hint.make_read_only()
 
 	return hint
 
-## Returns a dictionary representing the hint for the button type.
+## Returns a dictionary representing a button hint with the specified display text.
 static func hint_button(text: String) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.BUTTON, &"text": text}
 	hint.make_read_only()
@@ -1078,6 +1089,36 @@ func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
 
 				spin_box.set_meta(&"cell", cell)
 				self.set_cell_editor(spin_box)
+
+		Type.STRING, Type.STRING_NAME when hint.type == Hint.ENUM:
+			var options: PackedStringArray = hint.enum
+
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var popup := PopupMenu.new()
+				popup.add_theme_font_override(&"font", _font)
+				popup.add_theme_font_size_override(&"font_size", _font_size)
+				popup.add_theme_color_override(&"font_color", _font_color)
+				popup.add_theme_constant_override(&"outline_size", _font_outline_size)
+				popup.add_theme_color_override(&"font_outline_color", _font_outline_color)
+				popup.add_theme_stylebox_override(&"panel", _cell_edit)
+
+				for option: String in options:
+					popup.add_item(option)
+
+				var on_index_pressed: Callable
+				if type == Type.STRING:
+					on_index_pressed = func(index: int) -> void: setter.call(options[index])
+				else:
+					on_index_pressed = func(index: int) -> void: setter.call(StringName(options[index]))
+
+				popup.index_pressed.connect(on_index_pressed)
+				popup.focus_exited.connect(popup.queue_free)
+				self.add_child(popup)
+
+				popup.set_meta(&"cell", cell)
+				self.set_cell_editor(popup)
+
+				popup.popup(get_screen_transform() * scrolled_rect(cell.rect))
 
 		Type.STRING, Type.STRING_NAME:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
