@@ -1085,6 +1085,36 @@ func default_edit_handler(type: Type, hint: Dictionary) -> Callable:
 				spin_box.set_meta(&"cell", cell)
 				self.set_cell_editor(spin_box)
 
+		Type.STRING, Type.STRING_NAME when hint.type == Hint.ENUM:
+			var options: PackedStringArray = hint.enum
+
+			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
+				var popup := PopupMenu.new()
+				popup.add_theme_font_override(&"font", _font)
+				popup.add_theme_font_size_override(&"font_size", _font_size)
+				popup.add_theme_color_override(&"font_color", _font_color)
+				popup.add_theme_constant_override(&"outline_size", _font_outline_size)
+				popup.add_theme_color_override(&"font_outline_color", _font_outline_color)
+				popup.add_theme_stylebox_override(&"panel", _cell_edit)
+
+				for option: String in options:
+					popup.add_item(option)
+
+				var on_index_pressed: Callable
+				if type == Type.STRING:
+					on_index_pressed = func(index: int) -> void: setter.call(options[index])
+				else:
+					on_index_pressed = func(index: int) -> void: setter.call(StringName(options[index]))
+
+				popup.index_pressed.connect(on_index_pressed)
+				popup.focus_exited.connect(popup.queue_free)
+				self.add_child(popup)
+
+				popup.set_meta(&"cell", cell)
+				self.set_cell_editor(popup)
+
+				popup.popup(get_screen_transform() * scrolled_rect(cell.rect))
+
 		Type.STRING, Type.STRING_NAME:
 			return func(cell: Dictionary, setter: Callable, getter: Callable) -> void:
 				var line_edit := LineEdit.new()
