@@ -1,5 +1,5 @@
-# Copyright (c) 2024-2025 Mansur Isaev and contributors - MIT License
-# See `LICENSE.md` included in the source distribution for details.
+# Copyright (c) 2024-2026 Mansur Isaev and contributors - MIT License
+# See `LICENSE` included in the source distribution for details.
 
 ## A high-performance, customizable table view control.
 ##
