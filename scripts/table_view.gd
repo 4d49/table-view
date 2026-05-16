@@ -889,6 +889,12 @@ static func hint_enum(enumeration: Dictionary) -> Dictionary:
 
 	return hint
 
+static func hint_string_enum(strings: PackedStringArray) -> Dictionary:
+	var hint: Dictionary[StringName, Variant] = {&"type": Hint.ENUM, &"enum": strings}
+	hint.make_read_only()
+
+	return hint
+
 ## Builds a dictionary representing a flags hint, where individual flags are provided in a dictionary.
 static func hint_flags(flags: Dictionary) -> Dictionary:
 	var hint: Dictionary[StringName, Variant] = {&"type": Hint.FLAGS, &"flags": flags}
